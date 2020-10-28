@@ -1,0 +1,195 @@
+\documentclass[11pt]{article}
+    \title{\textbf{Tetrahedral mesh orthogonality optimization}}
+    \author{Moie Rousseau}
+    \date{}
+    
+    \addtolength{\topmargin}{-3cm}
+    \addtolength{\textheight}{3cm}
+    
+\usepackage{amsmath}
+
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\section{Introduction}
+
+Only tetrahedral and pyramidal elements and vertices belong to triangular face were optimized.
+
+Boundary faces did not needed to be optimized (it lack a point to define the cell center vector)
+
+\section{Objective function and objective derivative}
+
+Intent is to minimize for each face the angle between the face normal and the vector connecting the two cells center sharing the considered face by moving the mesh vertices. Therefore, the following objective function was defined:
+\begin{equation}
+f = \sum_{f \in faces} E_f = \sum_{f \in faces} A_f\ r_f^T \cdot n_f
+\end{equation}
+With $E_f$ the individual face error, $A_f$ the face area, $r_f$ the vector connection the two cell center sharing the face $f$ and $n_f$ the face normal. The dot product give the cosinus of the face normal - cell center vector angle, and the face area $A_f$ is a weighted factor to give higher importance to face with higher surface.
+
+The general formula of the derivative of individual face error $E_f$ according to a mesh vertice $P$ is given by:
+\begin{equation}
+\frac{dE_f}{dP} = (A_f n_f)^T \cdot \frac{d r_f}{dP}\ +\ r_f^T \cdot \frac{d(A_f n_f)}{dP}
+\end{equation}
+
+Derivative of face area, cell center vector and face normal according to mesh vertices required the knowledge of of the configuration of the mesh near the considered faces. Four distinct cases were identified (see X):
+\begin{enumerate}
+  \item Face is a triangle shared by two tetrahedra (common case). 
+  \item Face is a triangle shared by one tetrahedron and one pyramid.
+  \item Face is a triangle shared by two pyramids.
+  \item Face is a quad shared by two pyramids
+\end{enumerate}
+
+In each case, the problem was generalized as follow: let $A$, $B$, $C$ (and $D$) be the three (four) vertices of the considered triangular (quad) face. 
+Let $I$ and $J$ be the center of the two cells sharing the considered face so that the vector $r_f = \overrightarrow{IJ}$ and the face normal $n_f = \overrightarrow{AB} \cdot \overrightarrow{AC}$ point in the same direction (i.e. $r_f^T \cdot n_f \geq 0$).
+Vertices $E$ and $F$ designed the last vertices of the tetrahedra (pyramid) of center $I$ and $J$ respectively (see X).
+The general problem was therefore to find the derivative of face area $ABC(D)$, the normal vector $n_f$ and the cell center vector $r_f$ according to mesh vertice $P$ if $P$ is either $A$, $E$ or $F$ ($B$, $C$ and $D$ cases are recovered by simply reordering face vertices). 
+
+Figure
+
+The general formula of the derivative of individual face error $E_f$ according to a mesh vertices $P$ could be therefore rewrite depending on the configuration considered and the position of $P$ in the given configuration (i.e. $P$ is $A$, $E$ or $F$):
+
+\begin{equation}
+\frac{dE_f}{dP} = \sum_{f\in\ conf(P=A)} \frac{dE_f}{dA} + \sum_{f\in\ conf(P=E)} \frac{dE_f}{dE} +
+\sum_{f\in\ conf(P=F)} \frac{dE_f}{dF} 
+\end{equation}
+
+Calculations are described in the following subsections.
+
+
+\subsection{Case 1: triangular face shared by two tetrahedra}
+
+\subsubsection{Derivative of cell center vector}
+
+Center of a tetrahedra is given by the arithmetic mean of its four vertices:
+\begin{subequations}
+\begin{gather}
+I = \frac{1}{4} (A + B + C + E) \\
+J = \frac{1}{4} (A + B + C + F)
+\end{gather}
+\end{subequations} 
+Therefore, cell center vector $r_f$ reads:
+\begin{equation}
+r_f = J-I = \frac{1}{4} (F - E)
+\end{equation}
+Which permitted to express the derivative of $r_f$ according to a mesh vertice $P$ depending if $P$ is either $A$, $E$ or $F$:
+\begin{subequations}
+\begin{align}
+\frac{d r_f}{d A} &= \ 0 \\
+\frac{d r_f}{d E} &= - \frac{1}{4}\ \boldsymbol{I} \\
+\frac{d r_f}{d F} &= \ \frac{1}{4}\ \boldsymbol{I} 
+\end{align}
+\end{subequations} 
+With $\boldsymbol{I}$ the unit 3x3 diagonal matrix.
+
+
+\subsubsection{Derivative of face area and normal}
+
+Derivation of face area and face normal according to mesh vertices $P$ could be computed more easily together by noticing:
+\begin{equation}
+A_f n_f = \frac{1}{2} \ (B-A)\times(C-A) 
+\end{equation}
+The previous equation does not involve terms in $E$ or $F$, and derivatives according to mesh vertice $P$ if $P$ is either $E$ or $F$ are therefore null. Derivate if $P$ is $A$ then writes:
+\begin{equation}
+\frac{d (A_f n_f)}{dA} = \frac{1}{2}\ \frac{d \big[(B-A)\times(C-A)\big]}{dA}
+\end{equation}
+With:
+\begin{equation}
+(B-A)\times(C-A) = 
+\begin{pmatrix}
+a_y(b_z-c_z) + a_z(c_y-b_y) \\
+a_z(b_x-c_x) + a_x(c_z-b_z) \\
+a_x(b_y-c_y) + a_y(c_x-b_x)
+\end{pmatrix}
+\end{equation}
+Therefore:
+\begin{equation}
+\frac{d (A_f n_f)}{dA} =
+\begin{pmatrix}
+0 & (b_z-c_z) & (c_y-b_y) \\
+(c_z-b_z) & 0 & (b_x-c_x) \\
+(b_y-c_y) & (c_x-b_x) & 0
+\end{pmatrix}
+\end{equation}
+
+\subsubsection{Derivative of face error in case 1}
+
+The general formula for the derivative of the face error $E_f$ if the face lie in case 1 is thus:
+\begin{subequations}
+\begin{align}
+\frac{d E_f}{d A} &= 
+\begin{pmatrix}
+r_y(c_z-b_z) + r_z(b_y-c_y)\\
+r_x(b_z-c_z) + r_z(b_x-c_x) \\
+r_x(c_y-b_y) + r_y(b_x-c_x)
+\end{pmatrix}^T
+ \\
+\frac{d E_f}{d E} &= - \frac{A_f }{4}\ n_f^T \\
+\frac{d E_f}{d F} &= \ \frac{A_f }{4}\ n_f^T
+\end{align}
+\end{subequations} 
+
+
+
+
+\subsection{Case 2: triangular face shared by one tetrahedron and one pyramid}
+
+\subsubsection{Derivative of cell center vector}
+
+The center $J$ of the tetrahedron and $I$ of the pyramid is given by:
+\begin{subequations}
+\begin{align}
+I &= \frac{1}{4} A + \frac{1}{16} (B + C + G + F) \\
+J &= \frac{1}{4} (A + B + C + E)
+\end{align}
+\end{subequations} 
+
+Derivation of face normal and area derivative is similar to those in case 1.
+
+\subsubsection{Derivative of face error in case 2}
+The general formula for the derivative of the face error $E_f$ if the face lie in case 1 is thus TODO:
+\begin{subequations}
+\begin{align}
+\frac{d E_f}{d A} &= 
+\begin{pmatrix}
+r_y(c_z-b_z) + r_z(b_y-c_y)\\
+r_x(b_z-c_z) + r_z(b_x-c_x) \\
+r_x(c_y-b_y) + r_y(b_x-c_x)
+\end{pmatrix}^T
+ \\
+\frac{d E_f}{d E} &= - \frac{A_f }{4}\ n_f^T \\
+\frac{d E_f}{d F} &= \ \frac{A_f }{4}\ n_f^T
+\end{align}
+\end{subequations} 
+
+
+\subsection{Case 3: triangular face shared by two pyramids}
+
+
+
+
+\subsection{Case 4: quad face shared by two pyramids}
+
+
+
+\section{Implementation}
+
+Using numpy, pycuda ? nlopt ou SciPy ? L-BGFS ?
+
+
+\section{Example application}
+
+
+
+\section{Discussion}
+
+\subsection{Penalizing high error}
+High orthogonality error could be more penalized by applying a power-law to individual face error. 
+
+\section{Conclusion}
+
+We hope you will enjoy using this release as much as we enjoyed creating it. If you have any further comments, suggestions or wish to report an issue, please visit \emph{\textbf{https://gummi.app}}. 
+
+\end{document}
+
