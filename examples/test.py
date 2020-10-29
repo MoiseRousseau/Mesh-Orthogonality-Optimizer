@@ -17,13 +17,17 @@
 #
 # Author : Moise Rousseau (2020), email at moise.rousseau@polymtl.ca
 
+import sys
+from os import getcwd
+sys.path.append(getcwd()+'/../src/')
 from ortho_opt import Ortho_Opt
 
 if __name__ == "__main__":
-  elements = "test_mesh/tetgen_tet.ele"
-  vertices = "test_mesh/tetgen_tet.node"
+  elements = "./debug/one_face.ele"
+  vertices = "./debug/one_face.node"
   
   opt = Ortho_Opt()
   opt.load_elements_from_file(elements)
   opt.load_vertices_from_file(vertices)
   print(opt.current_cost_function())
+  print(opt.current_derivative())
