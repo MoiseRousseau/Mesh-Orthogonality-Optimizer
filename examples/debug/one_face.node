@@ -4,11 +4,11 @@
 #normal * area = -1 -1 0.
 #
 #derivative from finite difference considering perturbation of 0.01
-# 1 0 -0.5 -0.001
-# 2 0 0.5 -0.001
-# 3 0 0.5 1
-# 4 0 0.5 0
-# 5 0 0 1
+# 1 0 
+# 2 0 
+# 3 0 
+# 4 0 
+# 5 0 
 #E and F node
 1 -1. 0. 0.
 2  1. 0. 0.
