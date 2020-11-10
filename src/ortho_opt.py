@@ -110,7 +110,7 @@ class Ortho_Opt:
                                      self.cell_centers_vector[:,2] * self.face_normal[:,2])
     if self.penalizing_power != 1.:
       self.cost_function_value = self.cost_function_value ** self.penalizing_power
-    return self.cost_function_value
+    return np.copy(self.cost_function_value)
   
   def current_cost_function(self):
     return np.sum(self.current_face_errors())
@@ -233,8 +233,8 @@ class Ortho_Opt:
     return res
   
   def _wrapper_derivative_scipy_minimize_(self, x):
-    self.load_vertices(np.reshape(x, (int(len(x)/3),3)))
-    return np.ravel(self.current_derivative())
+    #self.load_vertices(np.reshape(x, (int(len(x)/3),3)))
+    return np.ravel(self.current_derivative()[:])
     
   def _wrapper_nlopt_(self, x, grad):
     self.i_iteration += 1
@@ -250,12 +250,12 @@ class Ortho_Opt:
     if not algo: algo = self.opt_algo_for_scipy
     if not maxiter: maxiter = self.maxiter
     if not tol: tol=self.stoptol
-    x0 = np.ravel(self.vertices)
+    x0 = np.copy(np.ravel(self.vertices))
     try:
       res = spopt.minimize(self._wrapper_cost_funtion_scipy_minimize_, x0, 
                          jac=self._wrapper_derivative_scipy_minimize_,
                          tol = tol,
-                         options={"maxiter":4})
+                         options={"maxiter":maxiter})
     except KeyboardInterrupt:
       return
     print("\nOptimization terminated. Output from SciPy:")

@@ -31,22 +31,22 @@ if __name__ == "__main__":
   elements = "./600_pts.ele"
   vertices = "./600_pts.node"
   
+  #input
   opt = Ortho_Opt()
   opt.load_elements_from_file(elements)
   opt.load_vertices_from_file(vertices)
   opt.use_numerical_derivative(True)
   opt.set_perturbation_numerical_derivative(1e-6)
-  error_ini = opt.current_face_errors()
-  #print(opt.current_derivative())
-  #print(opt.fixed_vertices)
+  error_ini = np.copy(opt.current_face_errors())
   vini = np.copy(opt.vertices)
+  
+  #optimize
   opt.optimize(maxiter=4)
   vfinal = np.copy(opt.vertices)
-  print((vini-vfinal)[500:580])
-  opt.load_vertices(vfinal)
-  error_final = opt.current_face_errors()
-  #opt.write_vertices("out.txt","numpy")
+  error_final = opt.current_face_errors()[:]
   print(f"Total time: {time.time()-t}")
+  
+  #plot error
   plt.hist([error_ini, error_final], bins=20, label=("Initial", "Optimized"))
   plt.legend()
   plt.show()
