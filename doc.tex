@@ -16,24 +16,48 @@
 
 \section{Introduction}
 
+Talk about the advantage of TPFA. PEBI grid
+
+Voronoi grid, but not conformal. VoroCrust, Collon Merland paper of quasi conformal. 
+
 Only tetrahedral and pyramidal elements and vertices belong to triangular face were optimized.
 
 Boundary faces did not needed to be optimized (it lack a point to define the cell center vector)
+
+DuMuX simulator %https://bib.irb.hr/datoteka/581499.conference_book.pdf#page=177
+
+TPFA standard in reservoir simulation, less computational cost, NTPFA for non K orthogonal grid %https://ntnuopen.ntnu.no/ntnu-xmlui/bitstream/handle/11250/2572391/20040_FULLTEXT.pdf?sequence=1&isAllowed=y
+
+PorePy, use TPFA, with example of tet meshes %https://sci-hub.tf/https://link.springer.com/article/10.1007/s10596-020-10002-5
+
+Utilise TFPA but non tet mesh %https://sci-hub.tf/https://ieeexplore.ieee.org/abstract/document/7502293
+
+TPFA for richards %https://link.springer.com/article/10.1134/S1995080218070053
+
+PFLOTRAN!
+
+Quelque infos ici %file:///home/moise/T%C3%A9l%C3%A9chargements/173309-PA.pdf
+
+Can not handle anisotropy easily %https://www.sciencedirect.com/science/article/pii/S0021999112000447
+
+OPM software use TPFA %https://opm-project.org/?page_id=19
+
+about mpfa method %https://ui.adsabs.harvard.edu/abs/2017AGUFM.H31D1541L/abstract
 
 \section{Objective function and objective derivative}
 
 Intent is to minimize for each face the angle between the face normal and the vector connecting the two cells center sharing the considered face by moving the mesh vertices. Therefore, the following objective function was defined:
 \begin{equation}
-f = \sum_{f \in faces} E_f = \sum_{f \in faces} A_f\ r_f^T \cdot n_f
+f = \sum_{f \in faces} E_f = \sum_{f \in faces} 1 - r_f^T \cdot n_f
 \end{equation}
-With $E_f$ the individual face error, $A_f$ the face area, $r_f$ the vector connection the two cell center sharing the face $f$ and $n_f$ the face normal. The dot product give the cosinus of the face normal - cell center vector angle, and the face area $A_f$ is a weighted factor to give higher importance to face with higher surface.
+With $E_f$ the individual face error, $r_f$ the unit vector in the direction connecting the two cell center sharing the considering face $f$ and $n_f$ the unit face normal. The dot product give the cosinus of the face normal - cell center vector angle which is maximal when both vector are aligned (i.e. the mesh orthogonal at this face).
 
 The general formula of the derivative of individual face error $E_f$ according to a mesh vertice $P$ is given by:
 \begin{equation}
-\frac{dE_f}{dP} = (A_f n_f)^T \cdot \frac{d r_f}{dP}\ +\ r_f^T \cdot \frac{d(A_f n_f)}{dP}
+\frac{dE_f}{dP} = n_f^T \cdot \frac{d r_f}{dP}\ +\ r_f^T \cdot \frac{d n_f}{dP}
 \end{equation}
 
-Derivative of face area, cell center vector and face normal according to mesh vertices required the knowledge of of the configuration of the mesh near the considered faces. Four distinct cases were identified (see X):
+Derivative of cell center vector and face normal according to mesh vertices required the knowledge of of the configuration of the mesh near the considered faces. Four distinct cases were identified (see X):
 \begin{enumerate}
   \item Face is a triangle shared by two tetrahedra (common case). 
   \item Face is a triangle shared by one tetrahedron and one pyramid.
@@ -69,43 +93,45 @@ I = \frac{1}{4} (A + B + C + E) \\
 J = \frac{1}{4} (A + B + C + F)
 \end{gather}
 \end{subequations} 
-Therefore, cell center vector $r_f$ reads:
+Therefore, cell center vector $R_f$ reads:
 \begin{equation}
-r_f = J-I = \frac{1}{4} (F - E)
+R_f = \| r_f \|\ r_f = J-I = \frac{1}{4} (F - E)
 \end{equation}
 Which permitted to express the derivative of $r_f$ according to a mesh vertice $P$ depending if $P$ is either $A$, $E$ or $F$:
 \begin{subequations}
 \begin{align}
-\frac{d r_f}{d A} &= \ 0 \\
-\frac{d r_f}{d E} &= - \frac{1}{4}\ \boldsymbol{I} \\
-\frac{d r_f}{d F} &= \ \frac{1}{4}\ \boldsymbol{I} 
+\frac{d R_f}{d A} &= \ 0 \\
+\frac{d R_f}{d F} &= - \frac{d R_f}{d E} = \frac{1}{4}\ \boldsymbol{I}
 \end{align}
 \end{subequations} 
 With $\boldsymbol{I}$ the unit 3x3 diagonal matrix.
 
-
-\subsubsection{Derivative of face area and normal}
-
-Derivation of face area and face normal according to mesh vertices $P$ could be computed more easily together by noticing:
+Therefore, the derivative of the unit cell center vector $r_f$ write:
 \begin{equation}
-A_f n_f = \frac{1}{2} \ (B-A)\times(C-A) 
+\frac{d r_f}{dF}\ = 
+- \frac{1}{\| r_f \|}\ \frac{d R_f}{dF}\ \left[ \boldsymbol{I} - r_f \otimes r_f^T \right] = - \frac{d r_f}{dE}
 \end{equation}
-The previous equation does not involve terms in $E$ or $F$, and derivatives according to mesh vertice $P$ if $P$ is either $E$ or $F$ are therefore null. Derivate if $P$ is $A$ then writes:
+Which lead:
 \begin{equation}
-\frac{d (A_f n_f)}{dA} = \frac{1}{2}\ \frac{d \big[(B-A)\times(C-A)\big]}{dA}
+n_f^T\ \frac{d r_f}{dF}\ = - n_f^T\ \frac{d r_f}{dE} =
+- \frac{1}{4\ \| r_f \|} \left[ n_f^T - E_f r_f^T \right]
 \end{equation}
+
+
+\subsubsection{Derivative of face normal}
+
+Normal does not depend of tet center. Therefore, derivative of the unit normal $n_f$ is given by (see Annexe):
+\begin{equation}
+\frac{d n_f}{dA}\ = 
+- \frac{1}{A_f}\ \frac{d (A_f n_f)}{dA}\ \left[ \frac{1}{A_f^2}\ A_f n_f \otimes A_f n_f^T\ - \boldsymbol{I}
+\right]
+\end{equation}
+With $A_f$ the face normal. The $A_f n_f$ vector is easily calculated by:
+
+
 With:
 \begin{equation}
-(B-A)\times(C-A) = 
-\begin{pmatrix}
-a_y(b_z-c_z) + a_z(c_y-b_y) \\
-a_z(b_x-c_x) + a_x(c_z-b_z) \\
-a_x(b_y-c_y) + a_y(c_x-b_x)
-\end{pmatrix}
-\end{equation}
-Therefore:
-\begin{equation}
-\frac{d (A_f n_f)}{dA} =
+\frac{d (A_f n_f)}{dA} = \frac{1}{2}
 \begin{pmatrix}
 0 & (b_z-c_z) & (c_y-b_y) \\
 (c_z-b_z) & 0 & (b_x-c_x) \\
@@ -118,7 +144,7 @@ Therefore:
 The general formula for the derivative of the face error $E_f$ if the face lie in case 1 is thus:
 \begin{subequations}
 \begin{align}
-\frac{d E_f}{d A} &= 
+\frac{d E_f}{d A} &= \frac{1}{2}
 \begin{pmatrix}
 r_y(c_z-b_z) + r_z(b_y-c_y)\\
 r_x(b_z-c_z) + r_z(b_x-c_x) \\
@@ -187,9 +213,85 @@ Using numpy, pycuda ? nlopt ou SciPy ? L-BGFS ?
 \subsection{Penalizing high error}
 High orthogonality error could be more penalized by applying a power-law to individual face error. 
 
+One may want to weigth the cost function with the face area in order to avor face orthogonality with high area. 
+This weighting had also the advantage of possessing a less complicate derivative. 
+However, meshes are often refined in sensitive place with low area faces, and therefore, this weigthing could be counter-productive in that case.
+
 \section{Conclusion}
 
 We hope you will enjoy using this release as much as we enjoyed creating it. If you have any further comments, suggestions or wish to report an issue, please visit \emph{\textbf{https://gummi.app}}. 
+
+
+
+
+\section{Annexe}
+\subsection{Expression of a unit vector derivative}
+Starting from the definition of a unit vector $u$:
+\begin{equation}
+u = \frac{U}{N}
+\end{equation}
+With $U$ a non unit vector and $N$ its norm.
+Derivate according to a particular point $X$ write:
+\begin{equation}
+\frac{du}{dX} = \frac{1}{N^2} \left[ N \frac{dU}{dX} - U \otimes \frac{dN}{dX} \right]
+\end{equation}
+Where the sign $\otimes$ represent the dyatic product. Derivative of the vector norm $N$ expresses:
+\begin{equation}
+\frac{dN}{dX} = \frac{d}{dX} \sqrt{\sum_i U_i^2} =
+\frac{1}{N} \sum_i U_i \frac{dU_i}{dX}
+\end{equation}
+Which simplifies to:
+\begin{equation}
+\frac{dN}{dX} = \frac{1}{N}\ U^T \frac{dU}{dX}
+\end{equation}
+Replacing the above expression in those of the derivative of the unit vector $u$ leads, after dyatic product rearangement and factorization:
+\begin{equation}
+\frac{du}{dX} = \frac{1}{N}\ \frac{dU}{dX} \left[ \boldsymbol{I} - u \otimes u^T \right] = \frac{1}{N}\ \frac{dU}{dX} \left[ \boldsymbol{I} - \frac{1}{N^2}\ U \otimes U^T \right]
+\end{equation}
+
+
+\section{Old}
+
+Derivation of face normal according to mesh vertices $P$ could be computed more easily together by noticing:
+The previous equation does not involve terms in $E$ or $F$, and derivatives according to mesh vertice $P$ if $P$ is either $E$ or $F$ are therefore null. Derivative if $P$ is $A$ then writes:
+\begin{equation}
+\frac{d n_f}{dA}\ = \frac{d \frac{A_f n_f}{A_f}}{dA} = 
+\frac{1}{A_f^2} \left( \frac{d A_f}{dA}^T \otimes (A_f n_f)^T\ -\ A_f \frac{d A_f n_f}{dA}
+\right)
+\end{equation}
+Face area $A_f$ could be computed by:
+\begin{equation}
+A_f = \frac{1}{2} \| A_f n_f \| = \frac{1}{2} \sqrt{(A_f n_f)_x^2 + (A_f n_f)_y^2 + (A_f n_f)_z^2}
+\end{equation}
+Where $(A_f n_f)_i$ is the component of $A_f n_f$ in the $i^{th}$ direction. Derivative of face area $A_f$ is therefore given by:
+\begin{equation}
+\frac{d A_f}{dA} = \frac{1}{2 A_f} \sum_{i \in (x,y,z)} (A_f n_f)_i \frac{d (A_f n_f)_i}{dA} 
+\end{equation}
+Which could be written as:
+\begin{equation}
+\frac{d A_f}{dA} = \frac{1}{2 A_f} (A_f n_f)^T\ \frac{d (A_f n_f)}{dA} 
+\end{equation}
+Inject in previous equation gives:
+\begin{equation}
+\frac{d n_f}{dA}\ = 
+\frac{1}{A_f^2} \left[ \frac{1}{2 A_f} \left(\frac{d (A_f n_f)}{dA}^T (A_f n_f) \right) \otimes (A_f n_f)^T\ -\ A_f \frac{d A_f n_f}{dA}
+\right]
+\end{equation}
+With:
+\begin{equation}
+\frac{d (A_f n_f)}{dA} = \frac{1}{2}
+\begin{pmatrix}
+0 & (b_z-c_z) & (c_y-b_y) \\
+(c_z-b_z) & 0 & (b_x-c_x) \\
+(b_y-c_y) & (c_x-b_x) & 0
+\end{pmatrix}
+\end{equation}
+However, the dyatic product is associative and the matrix $\frac{d (A_f n_f)}{dA}$ is antisymmetric, therefore:
+\begin{equation}
+\frac{d n_f}{dA}\ = 
+- \frac{1}{A_f}\ \frac{d (A_f n_f)}{dA}\ \left[ \frac{1}{A_f^2}\ A_f n_f \otimes A_f n_f^T\ - \boldsymbol{I}
+\right]
+\end{equation}
 
 \end{document}
 
