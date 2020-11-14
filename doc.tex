@@ -7,6 +7,7 @@
     \addtolength{\textheight}{3cm}
     
 \usepackage{amsmath}
+\usepackage{graphicx}
 
 
 \begin{document}
@@ -44,17 +45,30 @@ OPM software use TPFA %https://opm-project.org/?page_id=19
 
 about mpfa method %https://ui.adsabs.harvard.edu/abs/2017AGUFM.H31D1541L/abstract
 
-\section{Objective function and objective derivative}
+Don't
+
+Again
+
+
+\section{Objective function}
 
 Intent is to minimize for each face the angle between the face normal and the vector connecting the two cells center sharing the considered face by moving the mesh vertices. Therefore, the following objective function was defined:
 \begin{equation}
-f = \sum_{f \in faces} E_f = \sum_{f \in faces} 1 - r_f^T \cdot n_f
+f = \sum_{f \in faces} E_f = \sum_{f \in faces} w_f \left( 1 - r_f^T \cdot n_f \right) ^n
+\label{objective_function}
 \end{equation}
-With $E_f$ the individual face error, $r_f$ the unit vector in the direction connecting the two cell center sharing the considering face $f$ and $n_f$ the unit face normal. The dot product give the cosinus of the face normal - cell center vector angle which is maximal when both vector are aligned (i.e. the mesh orthogonal at this face).
+With $E_f$ the individual face error, $r_f$ the unit vector in the direction connecting the two cell center sharing the considering face $f$ and $n_f$ the unit face normal. 
+The dot product give the cosinus of the face normal - cell center vector angle which is maximal when both vector are aligned (i.e. the mesh orthogonal at this face). 
+The $w_f$ is a user specified weighting factor which allowed give higher importance to some connections compared to other, and the $n$ exponent represents a penalization factor for give more or less weight to high error versus low error. 
+
+\section{Derivative of the objective function}
+
+\subsection{Derivation of the objective function}
 
 The general formula of the derivative of individual face error $E_f$ according to a mesh vertice $P$ is given by:
 \begin{equation}
-\frac{dE_f}{dP} = n_f^T \cdot \frac{d r_f}{dP}\ +\ r_f^T \cdot \frac{d n_f}{dP}
+\frac{dE_f}{dP} = n\ w_f\ E_f^{n-1} \left(n_f^T \cdot \frac{d r_f}{dP}\ +\ r_f^T \cdot \frac{d n_f}{dP}\right)
+\label{general_derivative_expression}
 \end{equation}
 
 Derivative of cell center vector and face normal according to mesh vertices required the knowledge of of the configuration of the mesh near the considered faces. Four distinct cases were identified (see X):
@@ -66,136 +80,96 @@ Derivative of cell center vector and face normal according to mesh vertices requ
 \end{enumerate}
 
 In each case, the problem was generalized as follow: let $A$, $B$, $C$ (and $D$) be the three (four) vertices of the considered triangular (quad) face. 
-Let $I$ and $J$ be the center of the two cells sharing the considered face so that the vector $r_f = \overrightarrow{IJ}$ and the face normal $n_f = \overrightarrow{AB} \cdot \overrightarrow{AC}$ point in the same direction (i.e. $r_f^T \cdot n_f \geq 0$).
+Let $I$ and $J$ be the center of the two cells sharing the considered face so that the vector $R_f=\|R_f\|\ r_f = \overrightarrow{IJ}$ and the face normal $n_f = \overrightarrow{AB} \cdot \overrightarrow{AC}$ point in the same direction (i.e. $r_f^T \cdot n_f \geq 0$).
 Vertices $E$ and $F$ designed the last vertices of the tetrahedra (pyramid) of center $I$ and $J$ respectively (see X).
 The general problem was therefore to find the derivative of face area $ABC(D)$, the normal vector $n_f$ and the cell center vector $r_f$ according to mesh vertice $P$ if $P$ is either $A$, $E$ or $F$ ($B$, $C$ and $D$ cases are recovered by simply reordering face vertices). 
 
-Figure
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth]{article/cases.png}
+  \label{cases_figure}
+  \caption{The four different cases considered: (a) a triangular face shared by two tetrahedra, (b) shared by one tetrahedron and one pyramid, (c) share by two pyramids and (d) a quad face shared by two pyramids.}
+\end{figure}
 
 The general formula of the derivative of individual face error $E_f$ according to a mesh vertices $P$ could be therefore rewrite depending on the configuration considered and the position of $P$ in the given configuration (i.e. $P$ is $A$, $E$ or $F$):
-
 \begin{equation}
 \frac{dE_f}{dP} = \sum_{f\in\ conf(P=A)} \frac{dE_f}{dA} + \sum_{f\in\ conf(P=E)} \frac{dE_f}{dE} +
 \sum_{f\in\ conf(P=F)} \frac{dE_f}{dF} 
 \end{equation}
 
-Calculations are described in the following subsections.
 
 
-\subsection{Case 1: triangular face shared by two tetrahedra}
+\subsection{General expressions of the unit vector derivatives}
 
-\subsubsection{Derivative of cell center vector}
+\subsubsection{Unit cell center vector term}
 
-Center of a tetrahedra is given by the arithmetic mean of its four vertices:
-\begin{subequations}
-\begin{gather}
-I = \frac{1}{4} (A + B + C + E) \\
-J = \frac{1}{4} (A + B + C + F)
-\end{gather}
-\end{subequations} 
-Therefore, cell center vector $R_f$ reads:
+Derivative of the unit cell center vector $r_f$ according to a point $P$ write (see Annexe):
 \begin{equation}
-R_f = \| r_f \|\ r_f = J-I = \frac{1}{4} (F - E)
+\frac{d r_f}{dP}\ = 
+- \frac{1}{\| R_f \|}\ \frac{d R_f}{dP}\ \left[ \boldsymbol{I} - r_f \otimes r_f^T \right] 
 \end{equation}
-Which permitted to express the derivative of $r_f$ according to a mesh vertice $P$ depending if $P$ is either $A$, $E$ or $F$:
-\begin{subequations}
-\begin{align}
-\frac{d R_f}{d A} &= \ 0 \\
-\frac{d R_f}{d F} &= - \frac{d R_f}{d E} = \frac{1}{4}\ \boldsymbol{I}
-\end{align}
-\end{subequations} 
-With $\boldsymbol{I}$ the unit 3x3 diagonal matrix.
-
-Therefore, the derivative of the unit cell center vector $r_f$ write:
-\begin{equation}
-\frac{d r_f}{dF}\ = 
-- \frac{1}{\| r_f \|}\ \frac{d R_f}{dF}\ \left[ \boldsymbol{I} - r_f \otimes r_f^T \right] = - \frac{d r_f}{dE}
-\end{equation}
-Which lead:
+However, in the above section, the cell center vector derivative is either 0 for $P$ in position $A$, $\boldsymbol{I} /4$ if $P$ is in position $F$ or the opposite if in position $E$ (if non fixed). 
+Therefore, the term implying the unit cell center vector in Eq. (\ref{general_derivative_expression}) write:
 \begin{equation}
 n_f^T\ \frac{d r_f}{dF}\ = - n_f^T\ \frac{d r_f}{dE} =
-- \frac{1}{4\ \| r_f \|} \left[ n_f^T - E_f r_f^T \right]
+ \frac{1}{4 \| R_f \|} \left[n_f^T- n_f^T \cdot (r_f \otimes r_f^T) \right]
+\end{equation}
+Rearranging the parentesis finally lead to the general expression of the unit cell center vector derivative:
+\begin{equation}
+n_f^T\ \frac{d r_f}{dP}\ = 
+- \frac{1}{4 \| R_f \|} \left[ n_f^T - E_f r_f^T \right]
 \end{equation}
 
 
-\subsubsection{Derivative of face normal}
+\subsubsection{Unit face normal term}
 
-Normal does not depend of tet center. Therefore, derivative of the unit normal $n_f$ is given by (see Annexe):
+Normal does not depend of tet center. Therefore, the derivative of the unit normal $n_f$ is given by (see Annexe):
 \begin{equation}
-\frac{d n_f}{dA}\ = 
-- \frac{1}{A_f}\ \frac{d (A_f n_f)}{dA}\ \left[ \frac{1}{A_f^2}\ A_f n_f \otimes A_f n_f^T\ - \boldsymbol{I}
-\right]
+r_f^T\cdot \frac{d n_f}{dA}\ = 
+ \frac{1}{\| N_f \|}\ r_f^T\cdot \frac{d N_f}{dA}\ \left[ \boldsymbol{I} -  n_f \otimes n_f^T \right]
+ \label{deriv_n_f}
 \end{equation}
-With $A_f$ the face normal. The $A_f n_f$ vector is easily calculated by:
-
-
-With:
+Where the derivative of the face normal reads (see Annexe):
 \begin{equation}
-\frac{d (A_f n_f)}{dA} = \frac{1}{2}
-\begin{pmatrix}
+\frac{d N_f}{dA}\ = \begin{pmatrix}
 0 & (b_z-c_z) & (c_y-b_y) \\
 (c_z-b_z) & 0 & (b_x-c_x) \\
 (b_y-c_y) & (c_x-b_x) & 0
-\end{pmatrix}
+\end{pmatrix} 
 \end{equation}
+Computing the vector matrix product between the unit cell center vector and the derivative of the face normal lead to the following simplified expression of Eq. (\ref{deriv_n_f}):
+\begin{equation}
+r_f^T\cdot \frac{d n_f}{dA}\ = 
+ \frac{1}{\| N_f \|}\  \left( r_f^T \times (C-B) -  
+ \right[r_f^T \times (C-B)\left] \cdot \right[n_f \otimes n_f^T\left] \right)
+\end{equation}
+Parentesis near the dyadic product product could be rearanged so that:
+\begin{equation}
+r_f^T\cdot \frac{d n_f}{dA}\ = 
+ \frac{1}{\| N_f \|}\  \left( r_f^T \times (C-B) -  r_f^T \cdot
+ \right[n_f \times (C-B) \left] \cdot n_f^T \right)
+\end{equation}
+However, by construction, the unit face normal vector $n_f$ is p
 
-\subsubsection{Derivative of face error in case 1}
+ Distribution the cross product leads:
+
+\subsection{Specific expressions for the different cases}
+
+\subsubsection{Case 1}
 
 The general formula for the derivative of the face error $E_f$ if the face lie in case 1 is thus:
-\begin{subequations}
-\begin{align}
-\frac{d E_f}{d A} &= \frac{1}{2}
-\begin{pmatrix}
-r_y(c_z-b_z) + r_z(b_y-c_y)\\
-r_x(b_z-c_z) + r_z(b_x-c_x) \\
-r_x(c_y-b_y) + r_y(b_x-c_x)
-\end{pmatrix}^T
- \\
-\frac{d E_f}{d E} &= - \frac{A_f }{4}\ n_f^T \\
-\frac{d E_f}{d F} &= \ \frac{A_f }{4}\ n_f^T
-\end{align}
-\end{subequations} 
+
+
+\subsubsection{Case 2}
+
+
+\subsubsection{Case 3}
+
+\subsubsection{Case 4}
 
 
 
 
-\subsection{Case 2: triangular face shared by one tetrahedron and one pyramid}
-
-\subsubsection{Derivative of cell center vector}
-
-The center $J$ of the tetrahedron and $I$ of the pyramid is given by:
-\begin{subequations}
-\begin{align}
-I &= \frac{1}{4} A + \frac{1}{16} (B + C + G + F) \\
-J &= \frac{1}{4} (A + B + C + E)
-\end{align}
-\end{subequations} 
-
-Derivation of face normal and area derivative is similar to those in case 1.
-
-\subsubsection{Derivative of face error in case 2}
-The general formula for the derivative of the face error $E_f$ if the face lie in case 1 is thus TODO:
-\begin{subequations}
-\begin{align}
-\frac{d E_f}{d A} &= 
-\begin{pmatrix}
-r_y(c_z-b_z) + r_z(b_y-c_y)\\
-r_x(b_z-c_z) + r_z(b_x-c_x) \\
-r_x(c_y-b_y) + r_y(b_x-c_x)
-\end{pmatrix}^T
- \\
-\frac{d E_f}{d E} &= - \frac{A_f }{4}\ n_f^T \\
-\frac{d E_f}{d F} &= \ \frac{A_f }{4}\ n_f^T
-\end{align}
-\end{subequations} 
-
-
-\subsection{Case 3: triangular face shared by two pyramids}
-
-
-
-
-\subsection{Case 4: quad face shared by two pyramids}
 
 
 
@@ -225,6 +199,109 @@ We hope you will enjoy using this release as much as we enjoyed creating it. If 
 
 
 \section{Annexe}
+
+\subsection{Expressions of cell center vectors and their derivative}
+\subsubsection{Case 1}
+
+Center of a tetrahedra is given by the arithmetic mean of its four vertices:
+\begin{subequations}
+\begin{gather}
+I = \frac{1}{4} (A + B + C + E) \\
+J = \frac{1}{4} (A + B + C + F)
+\end{gather}
+\end{subequations} 
+Therefore, cell center vector $R_f$ reads:
+\begin{equation}
+R_f = \| r_f \|\ r_f = J-I = \frac{1}{4} (F - E)
+\end{equation}
+Which permitted to express the derivative of $R_f$ according to a mesh vertice $P$ depending if $P$ is either $A$, $E$ or $F$:
+\begin{subequations}
+\begin{align}
+\frac{d R_f}{d A} &= \ 0 \\
+\frac{d R_f}{d F} &= - \frac{d R_f}{d E} = \frac{1}{4}\ \boldsymbol{I}
+\end{align}
+\end{subequations} 
+
+\subsubsection{Case 2}
+
+In the second case, the center of the tetrahedra $I$ and of the pyramid $J$ are given by:
+\begin{subequations}
+\begin{gather}
+I = \frac{1}{4} (A + B + C + E) \\
+J = \frac{A}{4} + \frac{1}{16} (B + C + G + H)
+\end{gather}
+\end{subequations} 
+Therefore, cell center vector $R_f$ reads:
+\begin{equation}
+R_f = J-I = -\frac{E}{4} - \frac{3}{16} (B + C) + \frac{1}{16} ( G + H)
+\end{equation}
+In this case, only the $A$ and $E$ point are non fixed. Derivative of the cell center vector according to these two points is thus:
+\begin{subequations}
+\begin{align}
+\frac{d R_f}{d A} &= \ 0 \\
+\frac{d R_f}{d E} &= - \frac{1}{4}\ \boldsymbol{I}
+\end{align}
+\end{subequations}
+
+
+\subsubsection{Case 3}
+
+Center of both pyramids are given by:
+\begin{subequations}
+\begin{gather}
+I = \frac{A}{4} + \frac{1}{16} (B + C + K + L) \\
+J = \frac{A}{4} + \frac{1}{16} (B + C + G + H)
+\end{gather}
+\end{subequations} 
+Cell center vector $R_f$ reads:
+\begin{equation}
+R_f = \frac{1}{16} ( G + H - K - L)
+\end{equation}
+In this case, only point $A$ is non fixed, which therefore give:
+\begin{equation}
+\frac{d R_f}{d A} = \ 0 
+\end{equation}
+
+
+\subsubsection{Case 4}
+
+Center of both pyramids are given by:
+\begin{subequations}
+\begin{gather}
+I = \frac{E}{4} + \frac{1}{16} (A + B + C + D) \\
+J = \frac{F}{4} + \frac{1}{16} (A + B + C + D)
+\end{gather}
+\end{subequations} 
+Cell center vector $R_f$ reads:
+\begin{equation}
+R_f = \frac{1}{4} (F-E)
+\end{equation}
+And derivative is:
+\begin{equation}
+\frac{d R_f}{d F} = - \frac{d R_f}{d E} = \frac{1}{4}\ \boldsymbol{I}
+\end{equation}
+
+
+\subsection{Expression of the normal vector and its derivative}
+Normal vector $N_f$ could be computed using the cross product of vector $AB$ and $AC$:
+\begin{equation}
+N_f = (B-A) \times (C-B) = 
+\begin{pmatrix}
+(b_y-a_y)(c_z-b_z) - (c_y-b_y)(b_z-a_z)  \\
+(b_z-a_z)(c_x-b_x) - (c_z-b_z)(b_x-a_x)  \\
+(b_x-a_x)(c_y-b_y) - (c_x-b_x)(b_y-a_y) 
+\end{pmatrix}
+\end{equation}
+Thus, its derivative according to $A$ write:
+\begin{equation}
+\frac{dN_f}{dA} = 
+\begin{pmatrix}
+0 & (b_z-c_z) & (c_y-b_y) \\
+(c_z-b_z) & 0 & (b_x-c_x) \\
+(b_y-c_y) & (c_x-b_x) & 0
+\end{pmatrix}
+\end{equation}
+
 \subsection{Expression of a unit vector derivative}
 Starting from the definition of a unit vector $u$:
 \begin{equation}
@@ -235,7 +312,7 @@ Derivate according to a particular point $X$ write:
 \begin{equation}
 \frac{du}{dX} = \frac{1}{N^2} \left[ N \frac{dU}{dX} - U \otimes \frac{dN}{dX} \right]
 \end{equation}
-Where the sign $\otimes$ represent the dyatic product. Derivative of the vector norm $N$ expresses:
+Where the sign $\otimes$ represent the dyadic product. Derivative of the vector norm $N$ expresses:
 \begin{equation}
 \frac{dN}{dX} = \frac{d}{dX} \sqrt{\sum_i U_i^2} =
 \frac{1}{N} \sum_i U_i \frac{dU_i}{dX}
@@ -248,6 +325,10 @@ Replacing the above expression in those of the derivative of the unit vector $u$
 \begin{equation}
 \frac{du}{dX} = \frac{1}{N}\ \frac{dU}{dX} \left[ \boldsymbol{I} - u \otimes u^T \right] = \frac{1}{N}\ \frac{dU}{dX} \left[ \boldsymbol{I} - \frac{1}{N^2}\ U \otimes U^T \right]
 \end{equation}
+With $\boldsymbol{I}$ the unit 3x3 diagonal matrix.
+
+
+
 
 
 \section{Old}

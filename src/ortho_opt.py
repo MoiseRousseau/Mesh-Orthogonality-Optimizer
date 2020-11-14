@@ -163,7 +163,6 @@ class Ortho_Opt:
         element_id1_type = len(self.elements[element_id1-1])
         element_id2_type = len(self.elements[element_id2-1])
         if element_id1_type == 4 and element_id2_type == 4: #case 1: tet / tet
-          
           self._derivative_position_case1_(iface,face)
         elif element_id1_type == 4 and element_id2_type == 5: #case 2: tet / pyr
           pass
@@ -176,6 +175,7 @@ class Ortho_Opt:
         else:
           #TODO what to do with prisms and hex
           pass
+      self.derivative[self.fixed_vertices-1] = 0.
     return self.derivative
   
     
@@ -211,15 +211,15 @@ class Ortho_Opt:
     return
   
   def _derivative_caseE_(self, ivertice, iface):
-    deriv = - (self.current_face_error[iface] * self.cell_centers_vector[iface] -
-                            self.face_normal[iface]) / self.cell_centers_vector_norm[iface]
-    self.derivative[ivertice-1] += deriv
+    deriv = (self.face_normal[iface] - self.current_face_error[iface] * &
+             self.cell_centers_vector[iface]) / self.cell_centers_vector_norm[iface]
+    self.derivative[ivertice-1] -= 0.25*deriv
     return
   
   def _derivative_caseF_(self, ivertice, iface):
-    deriv = - (self.current_face_error[iface] * self.cell_centers_vector[iface]/norm -
-                            self.face_normal[iface]) / self.cell_centers_vector_norm[iface]
-    self.derivative[ivertice-1] -= deriv
+    deriv = (self.face_normal[iface] - self.current_face_error[iface] * &
+             self.cell_centers_vector[iface]) / self.cell_centers_vector_norm[iface]
+    self.derivative[ivertice-1] += 0.25*deriv
     return  
   
   
