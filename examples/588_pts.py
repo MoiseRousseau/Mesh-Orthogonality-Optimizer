@@ -28,28 +28,29 @@ import time
 
 if __name__ == "__main__":
   t = time.time()
-  elements = "./600_pts.ele"
-  vertices = "./600_pts.node"
+  elements = "./588_pts.ele"
+  vertices = "./588_pts.node"
   
   #input
   opt = Ortho_Opt()
   opt.load_elements_from_file(elements)
   opt.load_vertices_from_file(vertices)
-  opt.use_numerical_derivative(True)
+  opt.use_numerical_derivative(False)
   opt.set_perturbation_numerical_derivative(1e-6)
-  error_ini = np.copy(opt.current_face_errors())
+  opt.set_penalizing_power(1)
+  error_ini = np.copy(opt.current_face_orthogonality())
   vini = np.copy(opt.vertices)
   
   #optimize
-  opt.optimize(maxiter=4)
+  opt.optimize(maxiter=10)
   vfinal = np.copy(opt.vertices)
-  error_final = opt.current_face_errors()[:]
+  error_final = opt.current_face_orthogonality()
   print(f"Total time: {time.time()-t}")
   
   #plot error
   plt.hist([error_ini, error_final], bins=20, label=("Initial", "Optimized"))
   plt.legend()
   plt.show()
-  plt.hist(error_ini-error_final)
+  plt.hist(error_ini-error_final, bins=20)
   plt.show()
   

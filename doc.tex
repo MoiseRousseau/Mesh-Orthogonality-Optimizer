@@ -86,7 +86,7 @@ The general problem was therefore to find the derivative of face area $ABC(D)$, 
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\textwidth]{article/cases.png}
+  \includegraphics[width=\textwidth]{figures/cases.png}
   \label{cases_figure}
   \caption{The four different cases considered: (a) a triangular face shared by two tetrahedra, (b) shared by one tetrahedron and one pyramid, (c) share by two pyramids and (d) a quad face shared by two pyramids.}
 \end{figure}
@@ -106,7 +106,7 @@ The general formula of the derivative of individual face error $E_f$ according t
 Derivative of the unit cell center vector $r_f$ according to a point $P$ write (see Annexe):
 \begin{equation}
 \frac{d r_f}{dP}\ = 
-- \frac{1}{\| R_f \|}\ \frac{d R_f}{dP}\ \left[ \boldsymbol{I} - r_f \otimes r_f^T \right] 
+- \frac{1}{\| R_f \|} \left[ \boldsymbol{I} - r_f \otimes r_f^T \right] \frac{d R_f}{dP}
 \end{equation}
 However, in the above section, the cell center vector derivative is either 0 for $P$ in position $A$, $\boldsymbol{I} /4$ if $P$ is in position $F$ or the opposite if in position $E$ (if non fixed). 
 Therefore, the term implying the unit cell center vector in Eq. (\ref{general_derivative_expression}) write:
@@ -115,18 +115,21 @@ n_f^T\ \frac{d r_f}{dF}\ = - n_f^T\ \frac{d r_f}{dE} =
  \frac{1}{4 \| R_f \|} \left[n_f^T- n_f^T \cdot (r_f \otimes r_f^T) \right]
 \end{equation}
 Rearranging the parentesis finally lead to the general expression of the unit cell center vector derivative:
-\begin{equation}
-n_f^T\ \frac{d r_f}{dP}\ = 
-- \frac{1}{4 \| R_f \|} \left[ n_f^T - E_f r_f^T \right]
-\end{equation}
+\begin{subequations}
+\begin{align}
+n_f^T\ \frac{d r_f}{dA}\ &=  0 \\
+n_f^T\ \frac{d r_f}{dE}\ &= - \frac{1}{4 \| R_f \|} \left[ n_f^T - (n_f^T \cdot r_f)\ r_f^T \right] \\
+n_f^T\ \frac{d r_f}{dF}\ &=  \frac{1}{4 \| R_f \|} \left[ n_f^T - (n_f^T \cdot r_f)\  r_f^T \right]
+\end{align}
+\end{subequations} 
 
 
 \subsubsection{Unit face normal term}
 
-Normal does not depend of tet center. Therefore, the derivative of the unit normal $n_f$ is given by (see Annexe):
+Normal does not depend of tet center. Therefore, the derivative of the unit normal $n_f$ is given by:
 \begin{equation}
 r_f^T\cdot \frac{d n_f}{dA}\ = 
- \frac{1}{\| N_f \|}\ r_f^T\cdot \frac{d N_f}{dA}\ \left[ \boldsymbol{I} -  n_f \otimes n_f^T \right]
+ \frac{1}{\| N_f \|} \left[ r_f^T -  (r_f^T \cdot n_f)\ n_f^T \right] \frac{d N_f}{dA}
  \label{deriv_n_f}
 \end{equation}
 Where the derivative of the face normal reads (see Annexe):
@@ -137,21 +140,12 @@ Where the derivative of the face normal reads (see Annexe):
 (b_y-c_y) & (c_x-b_x) & 0
 \end{pmatrix} 
 \end{equation}
-Computing the vector matrix product between the unit cell center vector and the derivative of the face normal lead to the following simplified expression of Eq. (\ref{deriv_n_f}):
+Computing the vector matrix product with the face normal and rearranging parentesis near the dyadic product product lead to the following simplified expression of Eq. (\ref{deriv_n_f}):
 \begin{equation}
 r_f^T\cdot \frac{d n_f}{dA}\ = 
- \frac{1}{\| N_f \|}\  \left( r_f^T \times (C-B) -  
- \right[r_f^T \times (C-B)\left] \cdot \right[n_f \otimes n_f^T\left] \right)
+ \frac{1}{\| N_f \|} \left[ r_f^T -  (r_f^T \cdot n_f)\ n_f^T \right] \times (C-B)
 \end{equation}
-Parentesis near the dyadic product product could be rearanged so that:
-\begin{equation}
-r_f^T\cdot \frac{d n_f}{dA}\ = 
- \frac{1}{\| N_f \|}\  \left( r_f^T \times (C-B) -  r_f^T \cdot
- \right[n_f \times (C-B) \left] \cdot n_f^T \right)
-\end{equation}
-However, by construction, the unit face normal vector $n_f$ is p
 
- Distribution the cross product leads:
 
 \subsection{Specific expressions for the different cases}
 
@@ -323,7 +317,7 @@ Which simplifies to:
 \end{equation}
 Replacing the above expression in those of the derivative of the unit vector $u$ leads, after dyatic product rearangement and factorization:
 \begin{equation}
-\frac{du}{dX} = \frac{1}{N}\ \frac{dU}{dX} \left[ \boldsymbol{I} - u \otimes u^T \right] = \frac{1}{N}\ \frac{dU}{dX} \left[ \boldsymbol{I} - \frac{1}{N^2}\ U \otimes U^T \right]
+\frac{du}{dX} = \frac{1}{N} \left[ \boldsymbol{I} - u \otimes u^T \right] \frac{dU}{dX} = \frac{1}{N} \left[ \boldsymbol{I} - \frac{1}{N^2}\ U \otimes U^T \right] \frac{dU}{dX}
 \end{equation}
 With $\boldsymbol{I}$ the unit 3x3 diagonal matrix.
 
