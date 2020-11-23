@@ -1,0 +1,100 @@
+# depslib dependency file v1.0
+1605576472 source:/home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt/Connection.cpp
+	"Connection.h"
+
+1605899712 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt/Connection.h
+	<vector>
+	"Point.h"
+	"Vertice.h"
+	"Element.h"
+
+1606099734 source:/home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt/main.cpp
+	<iostream>
+	<string>
+	"Connection.h"
+	"Mesh.h"
+	"OrthOpt.h"
+	"Point.h"
+	<Eigen/Core>
+	<include/LBFGS.h>
+
+1606099154 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt/Point.h
+	<cmath>
+	<iostream>
+
+1605908958 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt/Mesh.h
+	<string>
+	<Eigen/Core>
+	"Connection.h"
+	"Point.h"
+	"Element.h"
+	"Vertice.h"
+
+1605908934 source:/home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt/Mesh.cpp
+	"Mesh.h"
+	<fstream>
+	<iostream>
+
+1605823430 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt/Element.h
+	"Vertice.h"
+
+1606101764 source:/home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt/OrthOpt.cpp
+	"OrthOpt.h"
+	<cmath>
+	<algorithm>
+	<iostream>
+	<vector>
+	<map>
+	<array>
+	<iostream>
+	<fstream>
+	"Mesh.h"
+	"Point.h"
+	"Connection.h"
+	<Eigen/Core>
+
+1606101443 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt/OrthOpt.h
+	<array>
+	"Mesh.h"
+	"Point.h"
+	"Connection.h"
+	<Eigen/Core>
+	<map>
+
+1598319952 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt//include/LBFGS.h
+	<Eigen/Core>
+	"LBFGSpp/Param.h"
+	"LBFGSpp/BFGSMat.h"
+	"LBFGSpp/LineSearchBacktracking.h"
+	"LBFGSpp/LineSearchBracketing.h"
+	"LBFGSpp/LineSearchNocedalWright.h"
+
+1598319952 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt//include/LBFGSpp/Param.h
+	<Eigen/Core>
+	<stdexcept>
+
+1598319952 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt//include/LBFGSpp/BFGSMat.h
+	<vector>
+	<Eigen/Core>
+	"BKLDLT.h"
+
+1598319952 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt//include/LBFGSpp/BKLDLT.h
+	<vector>
+	<stdexcept>
+	<Eigen/Core>
+
+1606023900 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt//include/LBFGSpp/LineSearchBacktracking.h
+	<Eigen/Core>
+	<stdexcept>
+
+1598319952 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt//include/LBFGSpp/LineSearchBracketing.h
+	<Eigen/Core>
+	<stdexcept>
+
+1598319952 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt//include/LBFGSpp/LineSearchNocedalWright.h
+	<Eigen/Core>
+	<stdexcept>
+
+1605816538 /home/moise/Ecole/Doc/tet_mesh_ortho_opt/cpp/OrthOpt/Vertice.h
+	"Point.h"
+
