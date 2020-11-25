@@ -115,7 +115,6 @@ int get_argument(int argc, char* argv[], string arg) {
 int main(int argc, char* argv[])
 {
     print_program_information();
-    int index;
     std::string f_vertices;
     std::string f_elements;
     std::string f_output = "out.xyz";
@@ -130,51 +129,47 @@ int main(int argc, char* argv[])
         print_program_help(argv);
         return 0;
     }
-    // MANDATORY INPUT
-    //vertices
-    index = get_argument(argc, argv, "-v");
-    if (index == 0) {cerr << "Vertice coordinates not provided" << endl; return 1;}
-    try {f_vertices = argv[index +1];}
-    catch(...) {cerr << "Error while reading vertice coordinates" << endl; return 1;}
-    //elements
-    index = get_argument(argc, argv, "-e");
-    if (index == 0) {cerr << "Elements topology not provided" << endl; return 1;}
-    try {f_elements = argv[index +1];}
-    catch(...) {cerr << "Error while reading element topology" << endl; return 1;}
 
-    // OPTIONAL INPUT
     int iarg = 1;
     auto arg = argv[0];
     while (iarg < argc) {
         arg = argv[iarg];
-        //if (string(arg).compare("-v")) {
-        if (strcmp(arg, "-o")) {
+        if (!strcmp(arg, "-v")) {
+            iarg++; f_vertices = argv[iarg];
+        }
+        else if (!strcmp(arg, "-e")) {
+            iarg++; f_elements = argv[iarg];
+        }
+        else if (!strcmp(arg, "-o")) {
             iarg++; f_output = argv[iarg];
         }
-        else if (strcmp(arg, "-penalizing_power")) {
+        else if (!strcmp(arg, "-penalizing_power")) {
             iarg++; penalizing_power = atof(argv[iarg]);
         }
-        else if (strcmp(arg, "-maxit")) {
+        else if (!strcmp(arg, "-maxit")) {
             iarg++; penalizing_power = atof(argv[iarg]);
         }
-        else if (strcmp(arg, "-penalizing_power")) {
+        else if (!strcmp(arg, "-penalizing_power")) {
             iarg++; maxit = atof(argv[iarg]);
         }
-        else if (strcmp(arg, "-n_threads")) {
+        else if (!strcmp(arg, "-n_threads")) {
             iarg++; omp_set_num_threads(atoi(argv[iarg]));
         }
-        else if (strcmp(arg, "-q")) {
+        else if (!strcmp(arg, "-q")) {
             quiet = true;
         }
-        else if (strcmp(arg, "-s")) {
+        else if (!strcmp(arg, "-s")) {
             surface = true;
         }
         else {
-            cerr << "Argument not recognized" << arg << endl;
+            cerr << "Argument not recognized " << arg << endl;
             return 1;
         }
         iarg++;
     }
+    //check mandatory input
+    if (f_vertices.size() == 0) {cerr << "Vertice coordinates not provided" << endl; return 1;}
+    if (f_elements.size() == 0) {cerr << "Elements topology not provided" << endl; return 1;}
 
 
     auto t1 = chrono::high_resolution_clock::now();

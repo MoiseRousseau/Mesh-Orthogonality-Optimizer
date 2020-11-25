@@ -91,8 +91,9 @@ class OrthOpt
     protected:
 
     private:
-        void build_connection(std::array<unsigned int, 4> key, \
-                               Element* elem_key, unsigned int opposite, \
+        void build_connection(int i, int j, \
+                               int k, int h, \
+                               int opposite, Element* elem,  \
                                std::map<std::array<unsigned int, 4>, Connection*> &unique_id_map);
         void populate_connections();
 

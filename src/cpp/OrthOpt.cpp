@@ -15,34 +15,50 @@
 #include <Eigen/Core>
 
 
-void OrthOpt::build_connection(std::array<unsigned int, 4> key, \
-                               Element* elem_key, unsigned int opposite, \
+void OrthOpt::build_connection(int i, int j, int k, int h, \
+                               int opposite, Element* elem,  \
                                std::map<std::array<unsigned int, 4>, Connection*> &unique_id_map) {
 
+    std::array<unsigned int, 4> key;
     std::map<std::array<unsigned int, 4>, Connection*>::iterator it;
     Connection* con;
 
-    //if (key[0] == 0) {} //triangle
+    //build key
+    key[0] = elem->vertice_ids[i];
+    key[1] = elem->vertice_ids[j];
+    key[2] = elem->vertice_ids[k];
+    if (h>0) {key[3] = elem->vertice_ids[h];}
+    else {key[3] = 0;}
+    std::sort(key.begin(),key.end());
+
     //find connection in map
     it = unique_id_map.find(key);
     if (it != unique_id_map.end()) { //key already in
         //terminate connection connection
-        it->second->element_id_up = elem_key;
-        it->second->vertice_up = mesh->vertices[opposite-1];
-        unique_id_map.erase(it);
+        it->second->element_id_up = elem;
+        it->second->vertice_up = elem->vertices[opposite];
         it->second->check_orientation();
+        #pragma omp critical
+        {
+            unique_id_map.erase(it);
+        }
+        #pragma omp atomic
         n_connections += 1;
     }
     else {
         con = new Connection();
-        con->vertices.push_back(mesh->vertices[key[1]-1]);
-        con->vertices.push_back(mesh->vertices[key[2]-1]);
-        con->vertices.push_back(mesh->vertices[key[3]-1]);
-        con->element_id_dn = elem_key;
-        con->vertice_dn = mesh->vertices[opposite-1];
+        con->vertices.push_back(elem->vertices[i]);
+        con->vertices.push_back(elem->vertices[j]);
+        con->vertices.push_back(elem->vertices[k]);
         con->type = 3;
-        unique_id_map[key] = con;
-        connections.push_back(con);
+        if (h>0) {con->vertices.push_back(elem->vertices[h]); con->type++;}
+        con->element_id_dn = elem;
+        con->vertice_dn = elem->vertices[opposite];
+        #pragma omp critical
+        {
+            unique_id_map[key] = con;
+            connections.push_back(con);
+        }
     }
 }
 
@@ -53,66 +69,41 @@ void OrthOpt::populate_connections() {
     //therefore, for each face, we create a connection object
     // with vertices uniquely oriented
     mesh->decompose_mesh();
-    std::array<unsigned int, 4> key;
-    unsigned int opposite;
     std::map<std::array<unsigned int, 4>, Connection*> unique_id_map;
+    #pragma omp parallel for shared(connections, mesh) shared(unique_id_map)
+                             //schedule(static, 1000)
     for (Element* elem : mesh->elements) {
         if (elem->type == 4) { //tetrahedron
             //first face 0 1 2, opposite 3
-            key[0] = 0;
-            key[1] = elem->vertice_ids[0];
-            key[2] = elem->vertice_ids[1];
-            key[3] = elem->vertice_ids[2];
-            opposite = elem->vertice_ids[3];
-            std::sort(key.begin(),key.end());
-            build_connection(key, elem, opposite, unique_id_map);
+            build_connection(0,1,2,-1, 3, elem, unique_id_map);
 
             //first face 1 2 3, opposite 0
-            key[0] = 0;
-            key[1] = elem->vertice_ids[1];
-            key[2] = elem->vertice_ids[2];
-            key[3] = elem->vertice_ids[3];
-            opposite = elem->vertice_ids[0];
-            std::sort(key.begin(),key.end());
-            build_connection(key, elem, opposite, unique_id_map);
+            build_connection(1,2,3,-1,0, elem, unique_id_map);
 
             //first face 0 1 3, opposite 2
-            key[0] = 0;
-            key[1] = elem->vertice_ids[0];
-            key[2] = elem->vertice_ids[1];
-            key[3] = elem->vertice_ids[3];
-            opposite = elem->vertice_ids[2];
-            std::sort(key.begin(),key.end());
-            build_connection(key, elem, opposite, unique_id_map);
+            build_connection(0,1,3,-1, 2, elem, unique_id_map);
 
             //first face 0 2 3, opposite 1
-            key[0] = 0;
-            key[1] = elem->vertice_ids[0];
-            key[2] = elem->vertice_ids[2];
-            key[3] = elem->vertice_ids[3];
-            opposite = elem->vertice_ids[1];
-            std::sort(key.begin(),key.end());
-            build_connection(key, elem, opposite, unique_id_map);
+            build_connection(0,2,3,-1,1, elem, unique_id_map);
         }
         else if (elem->type == 5) { //pyramid
-            // TODO: mesh decompose other element
+            build_connection(0,1,2,3,4, elem, unique_id_map);
+            //other are treated by tet above
         }
         else if (elem->type == 6) { //prisms
-
+            //not optimized, so do not figure
         }
         else if (elem->type == 8) { //hex
-
+            //not optimized, so do not figure
         }
         else {
             exit(1);
         }
     }
-    //for (auto con = connections.begin(); con != connections.end(); con++) {
     for (auto con = connections.begin(); con != connections.end();) {
         if ((*con)->vertice_up == nullptr) {
             for (Vertice* v : (*con)->vertices) {
                 v->fix_vertice();
-                //TODO undo
             }
             connections.erase(con);
             boundary_connections.push_back(*con);
@@ -122,6 +113,7 @@ void OrthOpt::populate_connections() {
     for (Vertice* v : mesh->vertices) {
         if (v->fixed) {n_vertices_to_opt -= 1;}
     }
+    //TODO del map
 }
 
 
