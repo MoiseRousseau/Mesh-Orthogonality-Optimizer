@@ -83,20 +83,21 @@ void print_program_information() {
 }
 
 void print_program_help(char* argv[]) {
-    std::cout << "Usage: " << argv[0] << " [input_mesh] [output_optimized_vertices] [opt_parameters]" << endl << endl;
-    std::cout << "Specify the input mesh using:" << endl;
-    std::cout << "\t-v <path to mesh coordinates in xyz format>" << endl;
-    std::cout << "\t-e <path to mesh elements defined by their vertices id>" << endl;
-    std::cout << "Specify the optimized vertices position output (xyz format) using:" << endl;
-    std::cout << "\t-o <output file> (Defaut \"out.xyz\")" << endl;
-    std::cout << "Optimization parameters:" << endl;
-    std::cout << "\t-penalizing_power <value> (Penalize face error with the specified power, default = 1)" << endl;
-    std::cout << "\t-maxit <value> (Maximum number of iteration, default = 20)" << endl;
-    std::cout << "\t-eps <value> ()" << endl;
-    std::cout << "Miscellaneous parameters:" << endl;
-    std::cout << "\t-q (Quiet operation)" << endl;
+    cout << "Usage: " << argv[0] << " [input_mesh] [output_optimized_vertices] [opt_parameters]" << endl << endl;
+    cout << "Specify the input mesh using:" << endl;
+    cout << "\t-v <path to mesh coordinates in xyz format>" << endl;
+    cout << "\t-e <path to mesh elements defined by their vertices id>" << endl;
+    cout << "Specify the optimized vertices position output (xyz format) using:" << endl;
+    cout << "\t-o <output file> (Defaut \"out.xyz\")" << endl;
+    cout << "Optimization parameters:" << endl;
+    cout << "\t-s (2D mesh optimization)" << endl;
+    cout << "\t-penalizing_power <value> (Penalize face error with the specified power, default = 1)" << endl;
+    cout << "\t-maxit <value> (Maximum number of iteration, default = 20)" << endl;
+    //cout << "\t-eps <value> ()" << endl;
+    cout << "Miscellaneous parameters:" << endl;
+    cout << "\t-q (Quiet operation)" << endl;
     cout << "\t-n_threads (Number of thread to run in parallel, defaut = OpenMP decide)" << endl;
-    std::cout << endl;
+    cout << endl;
 }
 
 int get_argument(int argc, char* argv[], string arg) {
@@ -117,9 +118,11 @@ int main(int argc, char* argv[])
     int index;
     std::string f_vertices;
     std::string f_elements;
-    std::string f_output;
+    std::string f_output = "out.xyz";
     double penalizing_power = 1.;
     int maxit = 20;
+    bool quiet = false;
+    bool surface = false;
 
     //parse input
     if (argc < 2 or get_argument(argc, argv, "-h") != 0) {
@@ -127,6 +130,7 @@ int main(int argc, char* argv[])
         print_program_help(argv);
         return 0;
     }
+    // MANDATORY INPUT
     //vertices
     index = get_argument(argc, argv, "-v");
     if (index == 0) {cerr << "Vertice coordinates not provided" << endl; return 1;}
@@ -137,32 +141,40 @@ int main(int argc, char* argv[])
     if (index == 0) {cerr << "Elements topology not provided" << endl; return 1;}
     try {f_elements = argv[index +1];}
     catch(...) {cerr << "Error while reading element topology" << endl; return 1;}
-    //output
-    index = get_argument(argc, argv, "-o");
-    if (index == 0) {f_output = "out.xyz";}
-    else {
-        try {f_output = argv[index +1];}
-        catch(...) {cerr << "Error while reading output file" << endl; return 1;}
-    }
 
-    //penalizing power
-    index = get_argument(argc, argv, "-penalizing_power");
-    try {
-        if (index != 0) {penalizing_power = atof(argv[index +1]);}
+    // OPTIONAL INPUT
+    int iarg = 1;
+    auto arg = argv[0];
+    while (iarg < argc) {
+        arg = argv[iarg];
+        //if (string(arg).compare("-v")) {
+        if (strcmp(arg, "-o")) {
+            iarg++; f_output = argv[iarg];
+        }
+        else if (strcmp(arg, "-penalizing_power")) {
+            iarg++; penalizing_power = atof(argv[iarg]);
+        }
+        else if (strcmp(arg, "-maxit")) {
+            iarg++; penalizing_power = atof(argv[iarg]);
+        }
+        else if (strcmp(arg, "-penalizing_power")) {
+            iarg++; maxit = atof(argv[iarg]);
+        }
+        else if (strcmp(arg, "-n_threads")) {
+            iarg++; omp_set_num_threads(atoi(argv[iarg]));
+        }
+        else if (strcmp(arg, "-q")) {
+            quiet = true;
+        }
+        else if (strcmp(arg, "-s")) {
+            surface = true;
+        }
+        else {
+            cerr << "Argument not recognized" << arg << endl;
+            return 1;
+        }
+        iarg++;
     }
-    catch(...) {cerr << "Error while reading penalizing power" << endl; return 1;}
-    //max iteratin
-    index = get_argument(argc, argv, "-maxit");
-    try {
-        if (index != 0) {maxit = atof(argv[index +1]);}
-    }
-    catch(...) {cerr << "Error while reading maximum iteration" << endl; return 1;}
-    //thread number
-    index = get_argument(argc, argv, "-t");
-    try {
-        if (index != 0) {omp_set_num_threads(atoi(argv[index +1]));}
-    }
-    catch(...) {cerr << "Error while reading number of thread" << endl; return 1;}
 
 
     auto t1 = chrono::high_resolution_clock::now();
@@ -183,8 +195,8 @@ int main(int argc, char* argv[])
     cout << "Number of vertices to optimize: " << opt.n_vertices_to_opt << endl;
     opt.save_face_non_orthogonality_angle("./face_error_initial.txt");
     auto t2 = chrono::high_resolution_clock::now();
-    cout << "Time elapsed: " << (t2-t1).count()/1e9 << " s"<< endl;
-
+    cout << "Time to read the mesh: " << (t2-t1).count()/1e9 << " s"<< endl;
+    return 0;
     cout << endl << "Optimize" << endl;
     //optimizer
     Wrapper_for_LBFGS wrapper(&opt);
@@ -210,7 +222,6 @@ int main(int argc, char* argv[])
         //opt.save_face_error_derivative("derivative_error.dat");
         return 1;
     }
-    //what to do the x optimized
     cout << "Optimized cost function: " << fx << endl;
 
     opt.mesh->save_vertices_tetgen(f_output);
