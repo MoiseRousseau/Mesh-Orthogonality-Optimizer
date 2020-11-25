@@ -2,7 +2,6 @@
 #define MESH_H
 
 #include <string>
-#include <Eigen/Core>
 #include "Connection.h"
 #include "Point.h"
 #include "Element.h"
@@ -73,11 +72,10 @@ class Mesh
                     elem->vertices.push_back(vertices[id-1]);
                 }
             }
+            //TODO delete unused vertices ?
         }
 
     private:
-        void build_connection(std::vector<Vertice*> key,
-                                Vertice* opposite, Element* p);
 };
 
 #endif // MESH_H

@@ -45,6 +45,8 @@ OPM software use TPFA %https://opm-project.org/?page_id=19
 
 about mpfa method %https://ui.adsabs.harvard.edu/abs/2017AGUFM.H31D1541L/abstract
 
+reduction of correction in OpenFOAM
+
 Don't
 
 Again
@@ -67,7 +69,7 @@ The $w_f$ is a user specified weighting factor which allowed give higher importa
 
 The general formula of the derivative of individual face error $E_f$ according to a mesh vertice $P$ is given by:
 \begin{equation}
-\frac{dE_f}{dP} = n\ w_f\ E_f^{n-1} \left(n_f^T \cdot \frac{d r_f}{dP}\ +\ r_f^T \cdot \frac{d n_f}{dP}\right)
+\frac{dE_f}{dP} = - n\ w_f\ \left( 1 - r_f^T \cdot n_f \right)^{n-1} \left(n_f^T \cdot \frac{d r_f}{dP}\ +\ r_f^T \cdot \frac{d n_f}{dP}\right)
 \label{general_derivative_expression}
 \end{equation}
 
@@ -147,32 +149,18 @@ r_f^T\cdot \frac{d n_f}{dA}\ =
 \end{equation}
 
 
-\subsection{Specific expressions for the different cases}
-
-\subsubsection{Case 1}
-
-The general formula for the derivative of the face error $E_f$ if the face lie in case 1 is thus:
-
-
-\subsubsection{Case 2}
-
-
-\subsubsection{Case 3}
-
-\subsubsection{Case 4}
 
 
 
-
-
-
-
-\section{Implementation}
-
-Using numpy, pycuda ? nlopt ou SciPy ? L-BGFS ?
 
 
 \section{Example application}
+
+\subsection{Implementation}
+
+\subsection{Optimizing mesh orthogonality from common mesher}
+
+Compare with Gmsh, TetGen, Netgen
 
 
 

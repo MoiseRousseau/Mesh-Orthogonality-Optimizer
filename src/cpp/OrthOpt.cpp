@@ -7,6 +7,7 @@
 #include <array>
 #include <iostream>
 #include <fstream>
+#include <omp.h>
 
 #include "Mesh.h"
 #include "Point.h"
@@ -127,18 +128,84 @@ void OrthOpt::populate_connections() {
 
 void OrthOpt::computeCostFunction()
 {
+    cost_function_value = 0;
+    #pragma omp parallel for
+    for (unsigned int count=0; count != n_connections; count++) {
+        face_error[count] = connections[count]->weight * \
+                            pow(connections[count]->compute_error(), penalizing_power);
+    }
+    #pragma omp parallel for reduction (+:cost_function_value)
+    for (double err : face_error) {
+        cost_function_value += err;
+    }
+}
+
+
+void OrthOpt::computeCostDerivative()
+{
+    computeCostFunction(); //update normal, cell center vector and other
+    unsigned int index;
+    double prefactor_penalizing_power;
+    Point deriv;
+    for (auto p=face_error_derivative.begin();
+              p!=face_error_derivative.end(); p++) {
+        p->x = 0.; p->y = 0.; p->z = 0.;
+    }
+    #pragma omp parallel for private(deriv, index, prefactor_penalizing_power) shared(face_error_derivative)
+    for (Connection* con : connections) {
+        prefactor_penalizing_power = penalizing_power * con->weight * \
+                               std::pow(con->error, penalizing_power-1);
+        if (con->element_id_dn->type == 4 and
+            con->element_id_up->type == 4) { //two tet case 1
+            for (Vertice* p : con->vertices) { //A position
+                if (p->fixed) {continue;}
+                index = derivative_vertice_ids[p->natural_id-1];
+                deriv = derivative_A_position(con, p) * prefactor_penalizing_power;
+                #pragma omp atomic update
+                face_error_derivative[index-1].x -= deriv.x;
+                #pragma omp atomic update
+                face_error_derivative[index-1].y -= deriv.y;
+                #pragma omp atomic update
+                face_error_derivative[index-1].z -= deriv.z;
+            }
+            deriv = derivative_E_position(con) * prefactor_penalizing_power;
+            //E position
+            if (con->vertice_dn->fixed == false) {
+                index = derivative_vertice_ids[con->vertice_dn->natural_id-1];
+                #pragma omp atomic update
+                face_error_derivative[index-1].x += deriv.x;
+                #pragma omp atomic update
+                face_error_derivative[index-1].y += deriv.y;
+                #pragma omp atomic update
+                face_error_derivative[index-1].z += deriv.z;
+            }
+            //F position
+            if (con->vertice_up->fixed == false) {
+                index = derivative_vertice_ids[con->vertice_up->natural_id-1];
+                #pragma omp atomic update
+                face_error_derivative[index-1].x -= deriv.x;
+                #pragma omp atomic update
+                face_error_derivative[index-1].y -= deriv.y;
+                #pragma omp atomic update
+                face_error_derivative[index-1].z -= deriv.z;
+            }
+        }
+    }
+}
+
+#if 0
+void OrthOpt::computeCostFunction2()
+{
     unsigned int count = 0;
     for (Connection* icon : connections) {
         if (icon->element_id_dn == nullptr) {continue;} //boundary connection
-        face_error[count] = icon->weight * pow(icon->compute_error(), penalizing_power);
+        face_error[count] = icon->weight * pow(std::acos(std::abs(1-icon->compute_error())), penalizing_power);
         count += 1;
     }
     cost_function_value = 0.;
     for (double err : face_error) {cost_function_value += err;}
 }
-
-
-void OrthOpt::computeCostDerivative()
+void OrthOpt::computeCostDerivative2()
 {
     computeCostFunction();
     unsigned int index;
@@ -154,8 +221,8 @@ void OrthOpt::computeCostDerivative()
                 index = derivative_vertice_ids[p->natural_id-1];
                 face_error_derivative[index-1] += derivative_A_position(con, p);
             }
-            deriv = derivative_E_position(con);
             //E position
+            deriv = derivative_E_position(con);
             if (con->vertice_dn->fixed == false) {
                 index = derivative_vertice_ids[con->vertice_dn->natural_id-1];
                 face_error_derivative[index-1] += -deriv;
@@ -168,6 +235,7 @@ void OrthOpt::computeCostDerivative()
         }
     }
 }
+#endif
 
 void OrthOpt::update_vertices_position(const Eigen::VectorXd &x) {
     unsigned int count=0;
@@ -186,10 +254,25 @@ void OrthOpt::update_vertices_position(const Eigen::VectorXd &x) {
 
 
 void OrthOpt::save_face_non_orthogonality_angle(std::string f_out) {
-    std::ofstream src(f_out);
+    std::ofstream out(f_out);
     for (Connection* con : connections) {
-        src << con->element_id_dn->natural_id << " ";
-        src << con->element_id_up->natural_id << " ";
-        src << std::acos(std::abs(1-con->error)) * 57.29583 << "\n";
+        out << con->element_id_dn->natural_id << " ";
+        out << con->element_id_up->natural_id << " ";
+        out << std::acos(std::abs(1-con->error)) * 57.29583 << "\n"; //57.2583 = 180 / pi
     }
+    out.close();
+}
+
+void OrthOpt::save_face_error_derivative(std::string f_out) {
+    std::ofstream out(f_out);
+    unsigned int index;
+    for (Vertice* v : mesh->vertices) {
+        if (v->fixed) {continue;}
+        index = derivative_vertice_ids[v->natural_id-1];
+        out << v->natural_id << " ";
+        out << face_error_derivative[index-1].x << " ";
+        out << face_error_derivative[index-1].y << " ";
+        out << face_error_derivative[index-1].z << std::endl;
+    }
+    out.close();
 }

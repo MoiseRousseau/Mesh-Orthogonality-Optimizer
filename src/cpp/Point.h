@@ -26,6 +26,7 @@ class Point
         void operator= (double a) {x = a; y = a; z = a;}
         //Point operator= (Point A) {return Point(A.x, A.y, A.z);}
         void operator+= (Point A) {x += A.x; y += A.y; z += A.z;}
+        void operator-= (Point A) {x -= A.x; y -= A.y; z -= A.z;}
         void operator/= (double n) {x /= n; y /= n; z /= n;}
 
         double dot(Point A) {return x*A.x + y*A.y + z*A.z;}

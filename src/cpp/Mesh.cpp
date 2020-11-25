@@ -1,6 +1,7 @@
 #include "Mesh.h"
 #include <fstream>
 #include <iostream>
+#include <iomanip> //set precision
 
 
 
@@ -19,6 +20,8 @@ void Mesh::load_vertices_xyz(std::string filename) {
 }
 void Mesh::save_vertices_xyz(std::string filename) {
     std::ofstream src(filename);
+    src << std::scientific;
+    src << std::setprecision(8);
     for (Vertice* v : vertices) {
         src << v->coor->x << ' ';
         src << v->coor->y << ' ';
@@ -61,7 +64,10 @@ void Mesh::save_vertices_tetgen(std::string filename) {
     std::ofstream src(filename);
     unsigned int count = 1;
     for (Vertice* v : vertices) {
+        src << std::fixed;
         src << count << ' ';
+        src << std::scientific;
+        src << std::setprecision(8);
         src << v->coor->x << ' ';
         src << v->coor->y << ' ';
         src << v->coor->z << '\n';

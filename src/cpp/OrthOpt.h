@@ -60,6 +60,14 @@ class OrthOpt
             computeCostFunction();
             return cost_function_value;
         }
+        void weight_by_area() {
+            if (connections[0]->area < 0) {computeCostFunction();}
+            for (Connection* con : connections) {
+                con->weight = con->area;
+            }
+        }
+        void weight_by_volume(int method) {};
+
         std::vector<double> getFaceError() {
             computeCostFunction();
             return face_error;
@@ -75,7 +83,9 @@ class OrthOpt
         //update vertices position with eigen vector
         void update_vertices_position(const Eigen::VectorXd &x);
 
+        //output function
         void save_face_non_orthogonality_angle(std::string f_out);
+        void save_face_error_derivative(std::string f_out);
 
 
     protected:
@@ -89,8 +99,7 @@ class OrthOpt
 
         Point derivative_E_position(Connection* con) {
             return ((con->normal - con->cell_center_vector * (1-con->error)) \
-                    / con->cell_center_vector_norm * con->weight * \
-                    std::pow(con->error, penalizing_power-1) * 0.25);
+                    / con->cell_center_vector_norm * 0.25);
         }
 
         Point derivative_A_position(Connection* con, Vertice* A) {

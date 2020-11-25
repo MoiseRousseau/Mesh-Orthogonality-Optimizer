@@ -57,6 +57,7 @@ class Connection
             compute_cell_center_vector();
             compute_normal();
             error = 1-cell_center_vector.dot(normal);
+            if (std::abs(error) < 1e-6) {error = 1e-6;}
             return error;
         }
         void compute_cell_center_vector() {
