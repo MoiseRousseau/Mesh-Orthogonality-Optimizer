@@ -47,8 +47,8 @@ def plot_histograms(angle_ini, angle_final):
 
 
 if __name__ == "__main__":
-  f_ini = "../src/cpp/bin/Debug/face_error_initial.txt"
-  f_final = "../src/cpp/bin/Debug/face_error_final.txt"
+  f_ini = "../src/cpp/bin/Release/face_error_initial.txt"
+  f_final = "../src/cpp/bin/Release/face_error_final.txt"
   
   angle_ini = read_angle(f_ini)
   angle_final = read_angle(f_final)

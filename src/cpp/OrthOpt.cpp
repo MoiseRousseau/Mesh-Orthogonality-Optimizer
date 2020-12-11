@@ -38,11 +38,7 @@ void OrthOpt::build_connection(int i, int j, int k, int h, \
         it->second->element_id_up = elem;
         it->second->vertice_up = elem->vertices[opposite];
         it->second->check_orientation();
-        #pragma omp critical
-        {
-            unique_id_map.erase(it);
-        }
-        #pragma omp atomic
+        unique_id_map.erase(it);
         n_connections += 1;
     }
     else {
@@ -54,11 +50,8 @@ void OrthOpt::build_connection(int i, int j, int k, int h, \
         if (h>0) {con->vertices.push_back(elem->vertices[h]); con->type++;}
         con->element_id_dn = elem;
         con->vertice_dn = elem->vertices[opposite];
-        #pragma omp critical
-        {
-            unique_id_map[key] = con;
-            connections.push_back(con);
-        }
+        unique_id_map[key] = con;
+        connections.push_back(con);
     }
 }
 
@@ -70,8 +63,6 @@ void OrthOpt::populate_connections() {
     // with vertices uniquely oriented
     mesh->decompose_mesh();
     std::map<std::array<unsigned int, 4>, Connection*> unique_id_map;
-    #pragma omp parallel for shared(connections, mesh) shared(unique_id_map)
-                             //schedule(static, 1000)
     for (Element* elem : mesh->elements) {
         if (elem->type == 4) { //tetrahedron
             //first face 0 1 2, opposite 3
@@ -183,6 +174,10 @@ void OrthOpt::computeCostDerivative()
             }
         }
     }
+}
+
+void OrthOpt::split_elements_with_high_error(double threshold) {
+
 }
 
 #if 0

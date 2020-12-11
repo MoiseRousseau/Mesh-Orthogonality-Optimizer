@@ -143,23 +143,17 @@ int main(int argc, char* argv[])
         else if (!strcmp(arg, "-o")) {
             iarg++; f_output = argv[iarg];
         }
-        else if (!strcmp(arg, "-penalizing_power")) {
-            iarg++; penalizing_power = atof(argv[iarg]);
-        }
         else if (!strcmp(arg, "-maxit")) {
-            iarg++; penalizing_power = atof(argv[iarg]);
+            iarg++; maxit = atof(argv[iarg]);
         }
         else if (!strcmp(arg, "-penalizing_power")) {
-            iarg++; maxit = atof(argv[iarg]);
+            iarg++; penalizing_power = atof(argv[iarg]);
         }
         else if (!strcmp(arg, "-n_threads")) {
             iarg++; omp_set_num_threads(atoi(argv[iarg]));
         }
         else if (!strcmp(arg, "-q")) {
             quiet = true;
-        }
-        else if (!strcmp(arg, "-s")) {
-            surface = true;
         }
         else {
             cerr << "Argument not recognized " << arg << endl;
@@ -190,8 +184,8 @@ int main(int argc, char* argv[])
     cout << "Number of vertices to optimize: " << opt.n_vertices_to_opt << endl;
     opt.save_face_non_orthogonality_angle("./face_error_initial.txt");
     auto t2 = chrono::high_resolution_clock::now();
-    cout << "Time to read the mesh: " << (t2-t1).count()/1e9 << " s"<< endl;
-    return 0;
+    cout << "Total time to load the mesh: " << (t2-t1).count()/1e9 << " s"<< endl;
+
     cout << endl << "Optimize" << endl;
     //optimizer
     Wrapper_for_LBFGS wrapper(&opt);
@@ -213,7 +207,11 @@ int main(int argc, char* argv[])
         cout << "Maximum iteration reached, stop..." << endl;
     }
     catch (logic_error) {
-        cout << endl << "Logic error" << endl << endl;
+        cout << endl << "Logic error" << endl;
+        cout << "You are not supposed to be here and probably find a bug..." << endl;
+        cout << "You can report it, or ignore it." << endl;
+        cout << "Or you ca change the penalization power to make thing work" << endl;
+        cout << endl;
         //opt.save_face_error_derivative("derivative_error.dat");
         return 1;
     }

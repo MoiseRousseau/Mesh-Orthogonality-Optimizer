@@ -133,6 +133,7 @@ class OrthOpt
                         *(C->coor)-*(B->coor)) / (con->area));
             }
         }
+        void split_elements_with_high_error(double threshold);
 
 };
 

@@ -45,11 +45,15 @@ class Mesh
         void read_PFLOTRAN_mesh(std::string filename);
 
         //Add binding with python and numpy
-        void read_numpy_vertices() {};
-        void read_numpy_elements() {};
+        void load_vertices_array(double vertices[], size_t n_vertices);
+        void load_elements_array(unsigned int elements[], unsigned int type[],
+                                 size_t s);
+        double* save_elements_array();
 
         //adding one vertices and one element at a time
         void add_vertice(double x, double y, double z, unsigned int id) {
+            //note here: we explicitely ask for vertice id since they are used
+            // to defined the elements.
             n_vertices += 1;
             Vertice* A = new Vertice(x,y,z,id);
             vertices.push_back(A);
