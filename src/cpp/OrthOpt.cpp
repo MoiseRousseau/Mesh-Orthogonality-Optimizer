@@ -109,8 +109,8 @@ void OrthOpt::populate_connections() {
 
 
 
-void OrthOpt::computeCostFunction()
-{
+void OrthOpt::computeCostFunction() {
+    unsigned int inverted_element = 0;
     cost_function_value = 0;
     #pragma omp parallel for
     for (unsigned int count=0; count != n_connections; count++) {
@@ -119,7 +119,13 @@ void OrthOpt::computeCostFunction()
     }
     #pragma omp parallel for reduction (+:cost_function_value)
     for (double err : face_error) {
+        if (err > 1. + 1e-6) {inverted_element++;}
+        //if (err > 1. + 1e-6) {std::cout << err << std::endl;}
         cost_function_value += err;
+    }
+    if (inverted_element != 0) {
+        std::cout << "WARNING: " <<  inverted_element;
+        std::cout << " inverted element found!" << std::endl;
     }
 }
 
@@ -176,53 +182,7 @@ void OrthOpt::computeCostDerivative()
     }
 }
 
-void OrthOpt::split_elements_with_high_error(double threshold) {
 
-}
-
-#if 0
-void OrthOpt::computeCostFunction2()
-{
-    unsigned int count = 0;
-    for (Connection* icon : connections) {
-        if (icon->element_id_dn == nullptr) {continue;} //boundary connection
-        face_error[count] = icon->weight * pow(std::acos(std::abs(1-icon->compute_error())), penalizing_power);
-        count += 1;
-    }
-    cost_function_value = 0.;
-    for (double err : face_error) {cost_function_value += err;}
-}
-void OrthOpt::computeCostDerivative2()
-{
-    computeCostFunction();
-    unsigned int index;
-    Point deriv;
-    for (index=0; index != face_error_derivative.size(); index++) {
-        face_error_derivative[index] = 0.;
-    }
-    for (Connection* con : connections) {
-        if (con->element_id_dn->type == 4 and
-            con->element_id_up->type == 4) { //two tet case 1
-            for (Vertice* p : con->vertices) { //A position
-                if (p->fixed) {continue;}
-                index = derivative_vertice_ids[p->natural_id-1];
-                face_error_derivative[index-1] += derivative_A_position(con, p);
-            }
-            //E position
-            deriv = derivative_E_position(con);
-            if (con->vertice_dn->fixed == false) {
-                index = derivative_vertice_ids[con->vertice_dn->natural_id-1];
-                face_error_derivative[index-1] += -deriv;
-            }
-            //F position
-            if (con->vertice_up->fixed == false) {
-                index = derivative_vertice_ids[con->vertice_up->natural_id-1];
-                face_error_derivative[index-1] += deriv;
-            }
-        }
-    }
-}
-#endif
 
 void OrthOpt::update_vertices_position(const Eigen::VectorXd &x) {
     unsigned int count=0;

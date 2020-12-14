@@ -2,18 +2,21 @@
 
 # tool macros
 CC := g++
-CCFLAGS :=
+CCFLAGS := -fopenmp
 DBGFLAGS := -g
-CCOBJFLAGS := $(CCFLAGS) -c
+CCOBJFLAGS := $(CCFLAGS) -c  -fPIC
 
 # path macros
-BIN_PATH := bin
-OBJ_PATH := obj
-SRC_PATH := src
-DBG_PATH := debug
+BIN_PATH := build/bin
+OBJ_PATH := build/obj
+SRC_PATH := src/cpp
+DBG_PATH := build/debug
+
+# lib macros
+EIGEN_LIB = /usr/include/eigen3
 
 # compile macros
-TARGET_NAME := main
+TARGET_NAME := OrthOpt
 ifeq ($(OS),Windows_NT)
 	TARGET_NAME := $(addsuffix .exe,$(TARGET_NAME))
 endif
@@ -40,10 +43,10 @@ $(TARGET): $(OBJ)
 	$(CC) $(CCFLAGS) -o $@ $(OBJ)
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
-	$(CC) $(CCOBJFLAGS) -o $@ $<
+	$(CC) $(CCOBJFLAGS) -I$(EIGEN_LIB) -o $@ $<
 
 $(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
-	$(CC) $(CCOBJFLAGS) $(DBGFLAGS) -o $@ $<
+	$(CC) $(CCOBJFLAGS) -I$(EIGEN_LIB) $(DBGFLAGS) -o $@ $<
 
 $(TARGET_DEBUG): $(OBJ_DEBUG)
 	$(CC) $(CCFLAGS) $(DBGFLAGS) $(OBJ_DEBUG) -o $@

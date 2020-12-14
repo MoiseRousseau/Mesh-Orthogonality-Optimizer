@@ -97,9 +97,9 @@ void Mesh::load_vertices_array(double vertices[], size_t n_vertices) {
     //load vertices from a array
     //designed for Python external call
     //vertices array must be 1D of size n_vertices*3
-    for (unsigned int id=1; id!=n_vertices+1; id++) {
+    for (size_t id=0; id!=n_vertices; id++) {
         add_vertice(vertices[3*id], vertices[3*id+1],
-                          vertices[3*id+2], id);
+                          vertices[3*id+2], id+1);
     }
 }
 
@@ -114,6 +114,7 @@ void Mesh::load_elements_array(unsigned int elements[], unsigned int type[],
     for (unsigned int n_to_read=0; n_to_read!=n_elements; n_to_read++) {
         ids.resize(0); //clear for reading a new elements
         for (unsigned int x=0; x!=type[n_to_read]; ) { //read ids
+            if (elements[count] <= 0) {continue; }
             ids.push_back(elements[count]);
             count++;
         }

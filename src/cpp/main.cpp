@@ -9,9 +9,37 @@
 #include "Point.h"
 
 #include <Eigen/Core>
-#include <include/LBFGS.h>
+#include "include/LBFGS.h"
 
 using namespace std;
+
+//Python binding
+
+#if 0
+extern "C" {
+    OrthOpt* OrthOpt() {
+        OrthOpt* res = new OrthOpt()
+        return res;
+    }
+    OrthOpt* OrthOpt(Mesh* m) {return new OrthOpt(m); }
+
+    Mesh* Mesh() {return new Mesh(); }
+
+    void load_vertices_array(Mesh mesh, double vertices[], size_t s) {
+        Mesh::load_elements_array(vertices, s);
+    }
+
+    void load_elements_array(Mesh mesh, double vertices[], size_t s) {
+        Mesh::load_elements_array(vertices, s);
+    }
+
+    unsigned int optimize(OrthOpt* obj, double penalization_power,
+                          unsigned int max_it) {
+
+        return code
+    }
+}
+#endif
 
 
 class Wrapper_for_LBFGS
@@ -84,19 +112,20 @@ void print_program_information() {
 
 void print_program_help(char* argv[]) {
     cout << "Usage: " << argv[0] << " [input_mesh] [output_optimized_vertices] [opt_parameters]" << endl << endl;
-    cout << "Specify the input mesh using:" << endl;
+    cout << "Input mesh:" << endl;
     cout << "\t-v <path to mesh coordinates in xyz format>" << endl;
-    cout << "\t-e <path to mesh elements defined by their vertices id>" << endl;
-    cout << "Specify the optimized vertices position output (xyz format) using:" << endl;
-    cout << "\t-o <output file> (Defaut \"out.xyz\")" << endl;
+    cout << "\t-e <path to mesh elements defined by their vertices id>" << endl << endl;
+    cout << "Optimized vertices position output (xyz format):" << endl;
+    cout << "\t-o <output file> (Defaut \"out.xyz\")" << endl << endl;
     cout << "Optimization parameters:" << endl;
-    cout << "\t-s (2D mesh optimization)" << endl;
-    cout << "\t-penalizing_power <value> (Penalize face error with the specified power, default = 1)" << endl;
-    cout << "\t-maxit <value> (Maximum number of iteration, default = 20)" << endl;
+    cout << "\t-penalizing_power <float> (Penalize face error with the specified power, default = 1)" << endl;
+    cout << "\t-maxit <int> (Maximum number of iteration, default = 20)" << endl;
+    cout << "\t-face_weighting <int> (Method to weight face error, 0 = no weighting, ";
+    cout << "1 = weight by face area, 2 = weight by face area inverse, default = 0)"<< endl << endl;
     //cout << "\t-eps <value> ()" << endl;
     cout << "Miscellaneous parameters:" << endl;
     cout << "\t-q (Quiet operation)" << endl;
-    cout << "\t-n_threads (Number of thread to run in parallel, defaut = OpenMP decide)" << endl;
+    cout << "\t-n_threads <int> (Number of thread to run in parallel, defaut = OpenMP decide)" << endl;
     cout << endl;
 }
 
@@ -120,6 +149,7 @@ int main(int argc, char* argv[])
     std::string f_output = "out.xyz";
     double penalizing_power = 1.;
     int maxit = 20;
+    int weighting_method = 0; //0=no weighting, 1=face area, 2=face area inverse
     bool quiet = false;
     bool surface = false;
 
@@ -148,6 +178,9 @@ int main(int argc, char* argv[])
         }
         else if (!strcmp(arg, "-penalizing_power")) {
             iarg++; penalizing_power = atof(argv[iarg]);
+        }
+        else if (!strcmp(arg, "-face_weighting")) {
+            iarg++; weighting_method = atoi(argv[iarg]);
         }
         else if (!strcmp(arg, "-n_threads")) {
             iarg++; omp_set_num_threads(atoi(argv[iarg]));
@@ -180,6 +213,8 @@ int main(int argc, char* argv[])
     cout << endl << "Build internal connections" << endl;
     OrthOpt opt(&mesh);
     opt.set_penalizing_power(penalizing_power);
+    if (weighting_method == 1) {opt.weight_by_area();};
+    if (weighting_method == 2) {opt.weight_by_area_inverse();};
     cout << "Number of internal connections in mesh: " << opt.connections.size() << endl;
     cout << "Number of vertices to optimize: " << opt.n_vertices_to_opt << endl;
     opt.save_face_non_orthogonality_angle("./face_error_initial.txt");

@@ -9,6 +9,7 @@
 #include <map>
 
 
+
 class OrthOpt
 {
     public:
@@ -45,6 +46,7 @@ class OrthOpt
         double penalizing_power = 1.;
         unsigned int n_vertices_to_opt = 0;
         unsigned int n_connections = 0;
+        double split_tolerance = 0.8;
 
         // OUTPUT //
         double cost_function_value;
@@ -64,6 +66,12 @@ class OrthOpt
             if (connections[0]->area < 0) {computeCostFunction();}
             for (Connection* con : connections) {
                 con->weight = con->area;
+            }
+        }
+        void weight_by_area_inverse() {
+            if (connections[0]->area < 0) {computeCostFunction();}
+            for (Connection* con : connections) {
+                con->weight = 1./con->area;
             }
         }
         void weight_by_volume(int method) {};
@@ -133,7 +141,7 @@ class OrthOpt
                         *(C->coor)-*(B->coor)) / (con->area));
             }
         }
-        void split_elements_with_high_error(double threshold);
+        //void split_elements_with_high_error();
 
 };
 
