@@ -21,7 +21,7 @@ class Connection
         Point cell_center_vector;  //vector linking the two cell center
         double cell_center_vector_norm = 0.; // and its norm
         double error = -1; //orthogonality error (1-r_f*n_f)
-        double weight = 1; //weighting factor on this connection
+        //double weight = 1; //weighting factor on this connection
 
         Connection() {}
         virtual ~Connection(void) {};
@@ -50,6 +50,7 @@ class Connection
                 auto temp2 = vertice_up;
                 vertice_up = vertice_dn;
                 vertice_dn = temp2;
+                compute_error();
             }
         }
 

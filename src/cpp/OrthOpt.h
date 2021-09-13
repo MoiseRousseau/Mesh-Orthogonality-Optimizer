@@ -6,55 +6,54 @@
 #include "Point.h"
 #include "Connection.h"
 #include <Eigen/Core>
-#include <map>
 
 
 
 class OrthOpt
 {
     public:
-        //TODO constructor when mesh is passed by numpy
-        OrthOpt() {};
-
-        OrthOpt(Mesh* m) {
-            mesh = m;
-            n_vertices_to_opt = mesh->n_vertices; //initiate to n_vertices and substract the fixed point);
-            populate_connections();
-            face_error.resize(n_connections);
-            face_error_derivative.resize(n_vertices_to_opt);
-            unsigned int index = 0;
-            for (Vertice* v : mesh->vertices) {
-                if (v->fixed == false) {
-                    index += 1;
-                    derivative_vertice_ids.push_back(index);
-                }
-                else {derivative_vertice_ids.push_back(0);}
-            }
-        }
-
-        virtual ~OrthOpt() {
-            for (auto con = connections.begin(); con != connections.end(); con++) {
-                delete *con;
-            }
-            connections.clear();
-        };
 
         // INPUT //
         Mesh* mesh;
-        std::vector<Connection*> connections;
-        std::vector<Connection*> boundary_connections;
         double penalizing_power = 1.;
         unsigned int n_vertices_to_opt = 0;
-        unsigned int n_connections = 0;
-        double split_tolerance = 0.8;
 
         // OUTPUT //
         double cost_function_value;
+        std::vector<double> face_weight;
         std::vector<double> face_error;
         std::vector<Point> face_error_derivative;
         //for each point, store the position of its derivative in face_error_derivative
         // 0 if fixed
         std::vector<unsigned int> derivative_vertice_ids;
+        
+        //TODO constructor when mesh is passed by numpy
+        OrthOpt() {};
+
+        OrthOpt(Mesh* m) {
+            mesh = m;
+            if (mesh->n_connections_internal == 0) {mesh->decompose();};
+            n_vertices_to_opt = mesh->n_vertices; //initiate to n_vertices and substract the fixed point);
+            face_error.resize(mesh->n_connections_internal);
+            face_weight.resize(mesh->n_connections_internal);
+            derivative_vertice_ids.resize(mesh->n_vertices);
+            unsigned int index = 0;
+            size_t count = -1;
+            for (Vertice* v : mesh->vertices) {
+                count++;
+                if (v->fixed == false) {
+                    index += 1;
+                    derivative_vertice_ids[count] = index;
+                }
+                else {
+                    derivative_vertice_ids[count] = -1;
+                    n_vertices_to_opt -= 1;
+                }
+            }
+            face_error_derivative.resize(n_vertices_to_opt);
+        }
+
+        virtual ~OrthOpt() {};
 
 
         void set_penalizing_power(double x) {penalizing_power = x;}
@@ -62,19 +61,29 @@ class OrthOpt
             computeCostFunction();
             return cost_function_value;
         }
+        
+        void weight_unitary() {
+            for (size_t count=0; count!=mesh->n_connections_internal; count++) {
+                face_weight[count] = 1.;
+            }
+        }
         void weight_by_area() {
-            if (connections[0]->area < 0) {computeCostFunction();}
-            for (Connection* con : connections) {
-                con->weight = con->area;
+            size_t count = 0;
+            for (Connection* con : mesh->connections_internal) {
+                face_weight[count] = con->area;
+                count++;
             }
         }
         void weight_by_area_inverse() {
-            if (connections[0]->area < 0) {computeCostFunction();}
-            for (Connection* con : connections) {
-                con->weight = 1./con->area;
+            size_t count = 0;
+            for (Connection* con : mesh->connections_internal) {
+                face_weight[count] = 1./con->area;
+                count++;
             }
         }
-        void weight_by_volume(int method) {};
+        void weight_by_volume_inverse() {};
+        
+        void set_fixed_vertices(std::vector<unsigned int> ids) {};
 
         std::vector<double> getFaceError() {
             computeCostFunction();
@@ -92,20 +101,13 @@ class OrthOpt
         void update_vertices_position(const Eigen::VectorXd &x);
 
         //output function
-        void save_face_non_orthogonality_angle(std::string f_out);
+        void save_face_error(std::string f_out);
         void save_face_error_derivative(std::string f_out);
 
 
     protected:
 
     private:
-        void build_connection(int i, int j, \
-                               int k, int h, \
-                               int opposite, Element* elem,  \
-                               std::map<std::array<unsigned int, 4>, Connection*> &unique_id_map);
-        void populate_connections();
-
-
         Point derivative_E_position(Connection* con) {
             return ((con->normal - con->cell_center_vector * (1-con->error)) \
                     / con->cell_center_vector_norm * 0.25);
@@ -141,8 +143,6 @@ class OrthOpt
                         *(C->coor)-*(B->coor)) / (con->area));
             }
         }
-        //void split_elements_with_high_error();
-
 };
 
 #endif // ORTHOPT_H

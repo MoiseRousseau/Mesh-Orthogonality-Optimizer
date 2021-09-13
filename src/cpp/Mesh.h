@@ -2,6 +2,8 @@
 #define MESH_H
 
 #include <string>
+#include <map>
+#include <array>
 #include "Connection.h"
 #include "Point.h"
 #include "Element.h"
@@ -12,10 +14,15 @@ class Mesh
 {
     public:
 
-        std::vector<Vertice*> vertices;
-        std::vector<Element*> elements;
         unsigned int n_vertices = 0;
+        std::vector<Vertice*> vertices;
         unsigned int n_elements = 0;
+        std::vector<Element*> elements;
+        
+        unsigned int n_connections_internal = 0;
+        std::vector<Connection*> connections_internal;
+        unsigned int n_connections_bc = 0;
+        std::vector<Connection*> boundary_connections;
 
         Mesh() {};
 
@@ -28,27 +35,17 @@ class Mesh
                 delete *v;
             }
             elements.clear();
+            for (auto con = connections_internal.begin(); 
+                 con != connections_internal.end(); con++) {
+                delete *con;
+            }
+            connections_internal.clear();
+            for (auto con = boundary_connections.begin(); 
+                 con != boundary_connections.end(); con++) {
+                delete *con;
+            }
+            boundary_connections.clear();
         };
-
-        // // // INPUT // // //
-        //ASCII meshes
-        void load_vertices_xyz(std::string);
-        void save_vertices_xyz(std::string);
-        void load_elements_with_vertice_ids(std::string);
-
-        //TetGen mesh
-        void load_vertices_tetgen(std::string);
-        void save_vertices_tetgen(std::string);
-        void load_elements_tetgen(std::string);
-
-        //May add other mesh type here
-        void read_PFLOTRAN_mesh(std::string filename);
-
-        //Add binding with python and numpy
-        void load_vertices_array(double vertices[], size_t n_vertices);
-        void load_elements_array(unsigned int elements[], unsigned int type[],
-                                 size_t s);
-        double* save_elements_array();
 
         //adding one vertices and one element at a time
         void add_vertice(double x, double y, double z, unsigned int id) {
@@ -68,18 +65,37 @@ class Mesh
             elem->natural_id = n_elements;
             elements.push_back(elem);
         }
+        
+        
+        //Add binding with python and numpy
+        void load_vertices_array(double vertices[], size_t n_vertices);
+        void load_elements_array(unsigned int elements[], unsigned int type[],
+                                 size_t s);
+        double* save_elements_array();
+        
+        
+        /**
+         * \brief Decompose the mesh to find internal and boundary
+              connections
+         * \details The part of the input mesh should be specified as
+         *    a contiguous range of facet indices.
+         * \param[in] facets_begin first facet in the range
+         * \param[in] facets_end one past last facet in the range
+         */
+        void decompose();
+        
+        
+        //output
+        void save_face_non_orthogonality_angle(std::string f_out);
+        void save_face_informations(std::string f_out);
+        void display_stats();
 
-        void decompose_mesh() {
-            //link element to vertice instances
-            for (Element* elem : elements) {
-                for (unsigned int id : elem->vertice_ids) {
-                    elem->vertices.push_back(vertices[id-1]);
-                }
-            }
-            //TODO delete unused vertices ?
-        }
 
     private:
+        void build_connection(int i, int j, \
+                              int k, int h, \
+                              int opposite, Element* elem,  \
+                              std::map<std::array<unsigned int, 4>, Connection*> &unique_id_map);
 };
 
 #endif // MESH_H

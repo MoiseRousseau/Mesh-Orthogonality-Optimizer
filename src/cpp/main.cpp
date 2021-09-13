@@ -7,6 +7,8 @@
 #include "Mesh.h"
 #include "OrthOpt.h"
 #include "Point.h"
+#include "IO.h"
+
 
 #include <Eigen/Core>
 #include "include/LBFGS.h"
@@ -98,6 +100,89 @@ class Wrapper_for_LBFGS
 };
 
 
+int optimize_mesh(Mesh* mesh, 
+                  int penalizing_power, int weighting_method,
+                  int maxit, 
+                  std::string f_output, std::string f_fixed) { 
+    
+    
+    //set up optimization problem class
+    OrthOpt opt(mesh);
+    opt.set_penalizing_power(penalizing_power);
+    switch (weighting_method) {
+        case 0:
+            opt.weight_unitary();
+            break;
+        case 1: 
+            opt.weight_by_area();
+            break;
+        case 2: 
+            opt.weight_by_area_inverse();
+            break;
+        case 3:
+            opt.weight_by_volume_inverse();
+            break;
+    }
+    //fix point
+    if (f_fixed.length() >= 1) {
+        std::vector<unsigned int> ids_fixed;
+        //TODO
+        opt.set_fixed_vertices(ids_fixed);
+    }
+    
+    //setup optimizer
+    Wrapper_for_LBFGS wrapper(&opt);
+    //create initial guess to pass to the solver
+    //the vertice position actually
+    Eigen::VectorXd x = wrapper.initialize_solution_vec();
+    //create solver
+    LBFGSpp::LBFGSParam<double> param;
+    param.max_iterations = maxit;
+    param.epsilon = 1e-6;
+    LBFGSpp::LBFGSSolver<double> solver(param);
+    
+    //pre-solve
+    cout << "Using penalization power " << opt.penalizing_power << endl;
+    cout << "Number of vertices to optimize: " << opt.n_vertices_to_opt << endl;
+    mesh->save_face_non_orthogonality_angle("./face_error_initial.txt");
+    cout << endl << "Optimize" << endl;
+    
+    //solve
+    double fx;
+    unsigned int niter;
+    try {
+        niter = solver.minimize(wrapper, x, fx);
+    }
+    catch (runtime_error) {
+        cout << "Maximum iteration reached, stop..." << endl;
+        return 1;
+    }
+    catch (logic_error) {
+        cout << endl << "Logic error" << endl;
+        cout << "You are not supposed to be here and probably find a bug..." << endl;
+        cout << "You can report it, or ignore it." << endl;
+        cout << "Or you ca change the penalization power to make thing work" << endl;
+        cout << endl;
+        //opt.save_face_error_derivative("derivative_error.dat");
+        return 1;
+    }
+    cout << "Optimized cost function: " << fx << endl;
+
+    mesh->save_face_non_orthogonality_angle("./face_error_final.txt");
+    return 0;
+}
+
+int scan_mesh(Mesh &m, std::string f_output) {
+    cout << endl << "Build internal connections" << endl;
+    m.decompose();
+    cout << "Number of internal connections in mesh: " << m.connections_internal.size() << endl;
+    cout << "Save face informations" << endl;
+    m.save_face_informations(f_output);
+    m.display_stats();
+    return 0;
+}
+
+
 void print_program_information() {
     cout << endl;
     cout << " ###########################################" << endl;
@@ -111,10 +196,14 @@ void print_program_information() {
 }
 
 void print_program_help(char* argv[]) {
-    cout << "Usage: " << argv[0] << " [input_mesh] [output_optimized_vertices] [opt_parameters]" << endl << endl;
+    cout << "Usage: " << argv[0] << "[mode] [input_mesh] [output_optimized_vertices] [opt_parameters]" << endl << endl;
+    cout << "Mode:" << endl;
+    cout << "-scan (read the mesh and return statistics on mesh area, center, non-orthogonality and skewness)"  << endl;
+    cout << "-optimize (optimize the mesh vertice position - default)" << endl << endl;
     cout << "Input mesh:" << endl;
     cout << "\t-v <path to mesh coordinates in xyz format>" << endl;
-    cout << "\t-e <path to mesh elements defined by their vertices id>" << endl << endl;
+    cout << "\t-e <path to mesh elements defined by their vertices id>" << endl;
+    cout << "\t-fixed <path to fixed vertices id> (optional)" << endl << endl;
     cout << "Optimized vertices position output (xyz format):" << endl;
     cout << "\t-o <output file> (Defaut \"out.xyz\")" << endl << endl;
     cout << "Optimization parameters:" << endl;
@@ -141,13 +230,16 @@ int get_argument(int argc, char* argv[], string arg) {
 
 
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
+
     print_program_information();
-    std::string f_vertices;
-    std::string f_elements;
+    //defaut parameter
+    std::string f_vertices = "";
+    std::string f_elements = "";
+    std::string f_fixed = "";
     std::string f_output = "out.xyz";
     double penalizing_power = 1.;
+    int mode = 0; //0=optimize, 1=scan
     int maxit = 20;
     int weighting_method = 0; //0=no weighting, 1=face area, 2=face area inverse
     bool quiet = false;
@@ -170,6 +262,9 @@ int main(int argc, char* argv[])
         else if (!strcmp(arg, "-e")) {
             iarg++; f_elements = argv[iarg];
         }
+        else if (!strcmp(arg, "-fixed")) {
+            iarg++; f_fixed = argv[iarg];
+        }
         else if (!strcmp(arg, "-o")) {
             iarg++; f_output = argv[iarg];
         }
@@ -188,6 +283,12 @@ int main(int argc, char* argv[])
         else if (!strcmp(arg, "-q")) {
             quiet = true;
         }
+        else if (!strcmp(arg, "-optimize")) {
+            mode=0;
+        }
+        else if (!strcmp(arg, "-scan")) {
+            mode=1;
+        }
         else {
             cerr << "Argument not recognized " << arg << endl;
             return 1;
@@ -198,64 +299,31 @@ int main(int argc, char* argv[])
     if (f_vertices.size() == 0) {cerr << "Vertice coordinates not provided" << endl; return 1;}
     if (f_elements.size() == 0) {cerr << "Elements topology not provided" << endl; return 1;}
 
-
+    //load mesh
     auto t1 = chrono::high_resolution_clock::now();
-
-    Mesh mesh;
-    //mesh.load_vertices_xyz(f_vertices);
-    //mesh.load_elements_with_vertice_ids(f_elements);
     cout << "Read mesh" << endl;
-    mesh.load_vertices_tetgen(f_vertices);
-    mesh.load_elements_tetgen(f_elements);
+    Mesh mesh;
+    IO io_mesh(&mesh);
+    //IO::load_mesh_auto(mesh, )
+    io_mesh.load_vertices_tetgen(f_vertices);
+    io_mesh.load_elements_tetgen(f_elements);
     cout << "Number of vertices in mesh: " << mesh.vertices.size() << endl;
     cout << "Number of elements in mesh: " << mesh.elements.size() << endl;
-
-    cout << endl << "Build internal connections" << endl;
-    OrthOpt opt(&mesh);
-    opt.set_penalizing_power(penalizing_power);
-    if (weighting_method == 1) {opt.weight_by_area();};
-    if (weighting_method == 2) {opt.weight_by_area_inverse();};
-    cout << "Number of internal connections in mesh: " << opt.connections.size() << endl;
-    cout << "Number of vertices to optimize: " << opt.n_vertices_to_opt << endl;
-    opt.save_face_non_orthogonality_angle("./face_error_initial.txt");
+    
+    int ret = 0;
+    switch (mode) {
+        case 0:
+            ret = optimize_mesh(&mesh, penalizing_power, weighting_method, maxit, f_output, f_fixed);
+            io_mesh.save_vertices_tetgen(f_output);
+            break;
+        case 1: 
+            ret = scan_mesh(mesh, f_output);
+            break;
+        default:
+            break;
+    }
+    
     auto t2 = chrono::high_resolution_clock::now();
-    cout << "Total time to load the mesh: " << (t2-t1).count()/1e9 << " s"<< endl;
-
-    cout << endl << "Optimize" << endl;
-    //optimizer
-    Wrapper_for_LBFGS wrapper(&opt);
-    //create initial guess to pass to the solver
-    //the vertice position actually
-    Eigen::VectorXd x = wrapper.initialize_solution_vec();
-    //create solver
-    LBFGSpp::LBFGSParam<double> param;
-    param.max_iterations = maxit;
-    param.epsilon = 1e-6;
-    LBFGSpp::LBFGSSolver<double> solver(param);
-    //solve
-    double fx;
-    unsigned int niter;
-    try {
-        niter = solver.minimize(wrapper, x, fx);
-    }
-    catch (runtime_error) {
-        cout << "Maximum iteration reached, stop..." << endl;
-    }
-    catch (logic_error) {
-        cout << endl << "Logic error" << endl;
-        cout << "You are not supposed to be here and probably find a bug..." << endl;
-        cout << "You can report it, or ignore it." << endl;
-        cout << "Or you ca change the penalization power to make thing work" << endl;
-        cout << endl;
-        //opt.save_face_error_derivative("derivative_error.dat");
-        return 1;
-    }
-    cout << "Optimized cost function: " << fx << endl;
-
-    opt.mesh->save_vertices_tetgen(f_output);
-    opt.save_face_non_orthogonality_angle("./face_error_final.txt");
-
-    t2 = chrono::high_resolution_clock::now();
     cout << "Time elapsed: " << (t2-t1).count()/1e9 << " s"<< endl;
-    return 0;
+    return ret;
 }
