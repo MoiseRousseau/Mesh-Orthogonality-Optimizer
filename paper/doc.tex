@@ -26,7 +26,7 @@ Discretization method.
 Finite volume solver. 
 Discretization of diffusion operator.
 TPFA vs MPFA. Advantage of TPFA. PEBI grid.
-Several software use the TFPA for the diffusion operator, for example PFLOTRAN \cite{hammond_pflotran_2012}, DuMux \cite{koch_dumux_2021}, PorePy \cite{keilegavlen_porepy_2021}, Open Porous Media flow simulation \cite{rasmussen_the_2021} or OpenFOAM \cite{}.
+Several software use the TFPA for the diffusion operator, for example PFLOTRAN \cite{hammond_pflotran_2012}, DuMux \cite{koch_dumux_2021}, PorePy \cite{keilegavlen_porepy_2021}, Open Porous Media flow simulation \cite{rasmussen_the_2021} or OpenFOAM \cite{}, Waiwera %https://waiwera.readthedocs.io/en/latest/setup_mesh.html
 Require orthogonal mesh.
 
 However, orthogonal meshes are rather the exception than the rule, and non-orthogonal meshes could introduce a $O(1)$ error which cannot be reduced by refining the mesh elements.
@@ -40,6 +40,8 @@ Non-orthogonal meshes such as tetrahedral can still be used along with a appropr
 Describe it.
 However, the more the mesh is non-orthogonal, the more iteration it will takes + error \cite{traore_robust_2009}. %it's a guess here, so I need to find reference
 Therefore, improving mesh orthogonality is a way to enhance accuracy of the numerical solution and decrease computational time.
+
+Variational approach to mesh orthogonality
 
 This study presents an approach for optimizing the tetrahedral mesh orthogonality in order to reduce numerical simulation error and computational time.
 Approach is decribed and tested for several mesh and diffusive problem.
@@ -60,8 +62,8 @@ Therefore, the objective function to minimize was defined as follow:
 %
 \begin{equation}
 \begin{aligned}
-& \underset{p}{\text{minimize}}
-& & f = \sum_{f \in faces} E_f = \sum_{f \in faces} w_f \left( 1 - r_f^T \cdot n_f \right) ^n  \\
+& \underset{P}{\text{minimize}}
+& & c(P) = \sum_{f \in faces} E_f \left( r_f^T \cdot n_f, w_f \right)  \\
 & \text{subject to}
 & & 
 X \: , \\
@@ -69,11 +71,13 @@ X \: , \\
 \end{aligned}
 \label{eq:opt_problem}
 \end{equation}
-With $E_f$ the individual face error, $r_f$ the unit vector in the direction connecting the two cell center sharing the considering face $f$ and $n_f$ the unit face normal. 
+With $E_f$ the individual face error defined as a function of the $r_f$ the unit vector in the direction connecting the two cell center sharing the considering face $f$ and $n_f$ the unit face normal. 
 %The dot product give the cosinus of the face normal - cell center vector angle which is maximal when both vector are aligned (i.e. the mesh orthogonal at this face). 
-The $w_f$ is a user specified weighting factor which allowed give higher importance to some connections compared to other, and the $n$ exponent represents a penalization factor for give more ($n>1$) or less ($n<1$) weight to high error versus low error. 
+The $w_f$ is a user specified weighting factor which allowed give higher importance to some connections compared to other.
 
-Minimizing $f$ therefore contributes to decrease the overall non-orthogonality error of the mesh.
+Choosing the right function $E_f$ is critical to ensure both a effective mesh orthogonality optimization and the creation of non-inverted elements. 
+
+Minimizing $c$ therefore contributes to decrease the overall non-orthogonality error of the mesh.
 This optimization problem constitute a high dimensional problem, while 3D tetrahedral meshes nowaday contains at several thousands of points, and up to billion sometimes \cite{neau_massively_2020}.
 Therefore, optimization was carried out using a gradient descent method such a the BiCGStab algorithm \cite{}.
 This method requires the derivative of the objective function relative to all the point in the mesh, which is detailed in the following section.
@@ -83,10 +87,11 @@ This method requires the derivative of the objective function relative to all th
 
 The general formula of the derivative of individual face error $E_f$ according to a mesh vertice $P$ is given by:
 \begin{equation}
-\frac{dE_f}{dP} = - n\ w_f\ \left( 1 - r_f^T \cdot n_f \right)^{n-1} \left(n_f^T \cdot \frac{d r_f}{dP}\ +\ r_f^T \cdot \frac{d n_f}{dP}\right)
+\frac{dE_f}{dP} = E'_f\left( r_f^T \cdot n_f, w_f \right) \left(n_f^T \cdot \frac{d r_f}{dP}\ +\ r_f^T \cdot \frac{d n_f}{dP}\right)
 \label{general_derivative_expression}
 \end{equation}
 
+Where $E'_f$ is the weighting function derivative relative to its face orthogonality variable $(r_f^T \cdot n_f)$.
 Derivative of cell center vector and face normal according to mesh vertices required the knowledge of of the configuration of the mesh near the considered faces. Four distinct cases were identified (see X):
 \begin{enumerate}
   \item Face is a triangle shared by two tetrahedra (common case). 

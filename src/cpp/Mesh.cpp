@@ -10,6 +10,7 @@
 
 void Mesh::decompose() {
     std::map<std::array<unsigned int, 4>, Connection*> unique_id_map;
+    std::vector<Connection*> temp_connection;
     
     //link element to vertice instances
     for (Element* elem : elements) {
@@ -19,20 +20,22 @@ void Mesh::decompose() {
     }
     for (Element* elem : elements) {
         if (elem->type == 4) { //tetrahedron
-            //first face 0 1 2, opposite 3
-            build_connection(0,1,2,-1, 3, elem, unique_id_map);
-
-            //first face 1 2 3, opposite 0
-            build_connection(1,2,3,-1,0, elem, unique_id_map);
-
-            //first face 0 1 3, opposite 2
-            build_connection(0,1,3,-1, 2, elem, unique_id_map);
-
-            //first face 0 2 3, opposite 1
-            build_connection(0,2,3,-1,1, elem, unique_id_map);
+            //face 0 1 2, opposite 3
+            build_connection(0,1,2,-1, 3, elem, unique_id_map,
+                             temp_connection);
+            //face 1 2 3, opposite 0
+            build_connection(1,2,3,-1,0, elem, unique_id_map,
+                             temp_connection);
+            //face 0 1 3, opposite 2
+            build_connection(0,1,3,-1, 2, elem, unique_id_map,
+                             temp_connection);
+            //face 0 2 3, opposite 1
+            build_connection(0,2,3,-1,1, elem, unique_id_map,
+                             temp_connection);
         }
         else if (elem->type == 5) { //pyramid
-            build_connection(0,1,2,3,4, elem, unique_id_map);
+            build_connection(0,1,2,3,4, elem, unique_id_map,
+                             temp_connection);
             //other are treated by tet above
         }
         else if (elem->type == 6) { //prisms
@@ -45,29 +48,30 @@ void Mesh::decompose() {
             exit(1);
         }
     }
-    for (auto con = connections_internal.begin(); 
-         con != connections_internal.end();) {
-        if ((*con)->vertice_up == nullptr) {
-            for (Vertice* v : (*con)->vertices) {
+    for (Connection* con : temp_connection) {
+        if (con->vertice_up == nullptr) {
+            for (Vertice* v : con->vertices) {
                 v->fix_vertice();
             }
-            connections_internal.erase(con);
-            boundary_connections.push_back(*con);
+            boundary_connections.push_back(con);
         }
-        else {++con;}
+        else {
+            connections_internal.push_back(con);
+        }
     }
     n_connections_internal = connections_internal.size();
     n_connections_bc = boundary_connections.size();
     
-    for (Connection* con : connections_internal) {
-        con->compute_normal();
-    }
+//    for (Connection* con : connections_internal) {
+//        con->compute_normal();
+//    }
 }
 
 
 void Mesh::build_connection(int i, int j, int k, int h, \
                             int opposite, Element* elem,  \
-                            std::map<std::array<unsigned int, 4>, Connection*> &unique_id_map) {
+                            std::map<std::array<unsigned int,4>, Connection*> &unique_id_map,
+                            std::vector<Connection*> &temp_connection) {
 
     std::array<unsigned int, 4> key;
     std::map<std::array<unsigned int, 4>, Connection*>::iterator it;
@@ -100,7 +104,7 @@ void Mesh::build_connection(int i, int j, int k, int h, \
         con->element_id_dn = elem;
         con->vertice_dn = elem->vertices[opposite];
         unique_id_map[key] = con;
-        connections_internal.push_back(con);
+        temp_connection.push_back(con);
     }
 }
 
@@ -141,15 +145,15 @@ void Mesh::save_face_non_orthogonality_angle(std::string f_out) {
     for (Connection* con : connections_internal) {
         out << con->element_id_dn->natural_id << " ";
         out << con->element_id_up->natural_id << " ";
-        //out << std::acos(std::abs(1-con->error)) * 57.29583 << std::endl; //57.2583 = 180 / pi
-        out << con->error << std::endl;
+        //out << std::acos(std::abs(con->orthogonality)) * 57.29583 << std::endl; //57.2583 = 180 / pi
+        out << 1-con->compute_orthogonality() << std::endl;
     }
     out.close();
 }
 
-void Mesh::save_face_informations(std::string f_out) {
+void Mesh::save_face_detailed_informations(std::string f_out) {
     std::ofstream out(f_out);
-    out << "id1 id2 v1 v2 v3 v4 area nx ny nz cx cy cz error\n";
+    out << "id1 id2 v1 v2 v3 v4 area nx ny nz cx cy cz error" << std::endl;
     for (Connection* con : connections_internal) {
         out << con->element_id_dn->natural_id << " ";
         out << con->element_id_up->natural_id << " ";
@@ -158,7 +162,9 @@ void Mesh::save_face_informations(std::string f_out) {
         out << con->area << " ";
         out << con->normal.x << " " << con->normal.y << " " << con->normal.z << " ";
         out << con->cell_center_vector.x << " " << con->cell_center_vector.y << " " << con->cell_center_vector.z << " ";
-        out << con->error << " " << std::endl;
+        con->compute_orthogonality();
+        
+        out << 1-con->orthogonality << " " << std::endl;
     }
     out.close();
 }
@@ -166,9 +172,11 @@ void Mesh::save_face_informations(std::string f_out) {
 void Mesh::display_stats() {
     double mean = 0;
     double max = -999;
+    double error;
     for (Connection* con : connections_internal) {
-        if (con->error > max) {max = con->error;};
-        mean += con->error;
+        error = 1-con->orthogonality;
+        if (error > max) {max = error;};
+        mean += error;
     }
     mean /= n_connections_internal;
     //maximum

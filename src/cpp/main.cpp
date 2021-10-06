@@ -8,6 +8,7 @@
 #include "OrthOpt.h"
 #include "Point.h"
 #include "IO.h"
+#include "Error_Functions.h"
 
 
 #include <Eigen/Core>
@@ -71,10 +72,9 @@ class Wrapper_for_LBFGS
                 grad[index] = p.x;
                 grad[index+1] = p.y;
                 grad[index+2] = p.z;
-                //TODO some discrepancy with the python code
                 index += 3;
             }
-            cout << "Cost function: " << opt->cost_function_value << '\n';
+            cout << "Cost function: " << opt->cost_function_value << endl;
             //std::ostringstream f_out;
             //f_out << "derivative_it" << iteration << ".dat";
             //opt->save_face_error_derivative(f_out.str());
@@ -101,14 +101,13 @@ class Wrapper_for_LBFGS
 
 
 int optimize_mesh(Mesh* mesh, 
-                  int penalizing_power, int weighting_method,
-                  int maxit, 
+                  Error_Function* Ef, int weighting_method,
+                  int maxit, double eps,
                   std::string f_output, std::string f_fixed) { 
     
     
     //set up optimization problem class
-    OrthOpt opt(mesh);
-    opt.set_penalizing_power(penalizing_power);
+    OrthOpt opt(mesh, Ef);
     switch (weighting_method) {
         case 0:
             opt.weight_unitary();
@@ -138,11 +137,11 @@ int optimize_mesh(Mesh* mesh,
     //create solver
     LBFGSpp::LBFGSParam<double> param;
     param.max_iterations = maxit;
-    param.epsilon = 1e-6;
+    param.epsilon = eps;
+    param.max_linesearch = 100;
     LBFGSpp::LBFGSSolver<double> solver(param);
     
     //pre-solve
-    cout << "Using penalization power " << opt.penalizing_power << endl;
     cout << "Number of vertices to optimize: " << opt.n_vertices_to_opt << endl;
     mesh->save_face_non_orthogonality_angle("./face_error_initial.txt");
     cout << endl << "Optimize" << endl;
@@ -154,7 +153,8 @@ int optimize_mesh(Mesh* mesh,
         niter = solver.minimize(wrapper, x, fx);
     }
     catch (runtime_error) {
-        cout << "Maximum iteration reached, stop..." << endl;
+        mesh->save_face_non_orthogonality_angle("./face_error_final.txt");
+        throw;
         return 1;
     }
     catch (logic_error) {
@@ -177,7 +177,8 @@ int scan_mesh(Mesh &m, std::string f_output) {
     m.decompose();
     cout << "Number of internal connections in mesh: " << m.connections_internal.size() << endl;
     cout << "Save face informations" << endl;
-    m.save_face_informations(f_output);
+    
+    m.save_face_detailed_informations(f_output);
     m.display_stats();
     return 0;
 }
@@ -196,25 +197,38 @@ void print_program_information() {
 }
 
 void print_program_help(char* argv[]) {
-    cout << "Usage: " << argv[0] << "[mode] [input_mesh] [output_optimized_vertices] [opt_parameters]" << endl << endl;
+    cout << "Usage: " << argv[0] << " [mode] [input_mesh] \
+[output_optimized_vertices] [opt_parameters]" << endl;
+    cout << endl;
     cout << "Mode:" << endl;
-    cout << "-scan (read the mesh and return statistics on mesh area, center, non-orthogonality and skewness)"  << endl;
-    cout << "-optimize (optimize the mesh vertice position - default)" << endl << endl;
+    cout << "\t-scan (read the mesh and return statistics on mesh area, center, \
+non-orthogonality and skewness)"  << endl;
+    cout << "\t-optimize (optimize the mesh vertice position - default)" << endl;
+    cout << endl;
     cout << "Input mesh:" << endl;
     cout << "\t-v <path to mesh coordinates in xyz format>" << endl;
     cout << "\t-e <path to mesh elements defined by their vertices id>" << endl;
-    cout << "\t-fixed <path to fixed vertices id> (optional)" << endl << endl;
+    cout << "\t-fixed <path to fixed vertices id> (optional)" << endl;
+    cout << endl;
     cout << "Optimized vertices position output (xyz format):" << endl;
-    cout << "\t-o <output file> (Defaut \"out.xyz\")" << endl << endl;
+    cout << "\t-o <output file> (Defaut \"out.xyz\")" << endl;
+    cout << endl;
+    cout << "Error function parameters:" << endl;
+    cout << "\t-function_type <int> (Method to compute penalize error, 0 = power function, 1 = inverse function, 2 = log function, default = 1)" << endl;
+    cout << "\t-penalizing_power <float> (Power or inverse function, penalize\
+face error with the specified power, default = 1)" << endl;
+    cout << "\t-face_weighting <int> (Method to weight face error, \
+0 = no weighting, 1 = weight by face area,\
+2 = weight by face area inverse, default = 0)"<< endl;
+    cout << "\t-face_weighting_file <path>" << endl;
+    cout << endl;
     cout << "Optimization parameters:" << endl;
-    cout << "\t-penalizing_power <float> (Penalize face error with the specified power, default = 1)" << endl;
     cout << "\t-maxit <int> (Maximum number of iteration, default = 20)" << endl;
-    cout << "\t-face_weighting <int> (Method to weight face error, 0 = no weighting, ";
-    cout << "1 = weight by face area, 2 = weight by face area inverse, default = 0)"<< endl << endl;
     //cout << "\t-eps <value> ()" << endl;
     cout << "Miscellaneous parameters:" << endl;
     cout << "\t-q (Quiet operation)" << endl;
-    cout << "\t-n_threads <int> (Number of thread to run in parallel, defaut = OpenMP decide)" << endl;
+    cout << "\t-n_threads <int> (Number of thread to run in parallel,\
+defaut = OpenMP decide)" << endl;
     cout << endl;
 }
 
@@ -240,7 +254,9 @@ int main(int argc, char* argv[]) {
     std::string f_output = "out.xyz";
     double penalizing_power = 1.;
     int mode = 0; //0=optimize, 1=scan
+    int function_type = 0;
     int maxit = 20;
+    double eps = 1e-6;
     int weighting_method = 0; //0=no weighting, 1=face area, 2=face area inverse
     bool quiet = false;
     bool surface = false;
@@ -256,7 +272,15 @@ int main(int argc, char* argv[]) {
     auto arg = argv[0];
     while (iarg < argc) {
         arg = argv[iarg];
-        if (!strcmp(arg, "-v")) {
+        // MODE //
+        if (!strcmp(arg, "-optimize")) {
+            mode=0;
+        }
+        else if (!strcmp(arg, "-scan")) {
+            mode=1;
+        }
+        // INPUT //
+        else if (!strcmp(arg, "-v")) {
             iarg++; f_vertices = argv[iarg];
         }
         else if (!strcmp(arg, "-e")) {
@@ -265,11 +289,13 @@ int main(int argc, char* argv[]) {
         else if (!strcmp(arg, "-fixed")) {
             iarg++; f_fixed = argv[iarg];
         }
+        // OUTPUT //
         else if (!strcmp(arg, "-o")) {
             iarg++; f_output = argv[iarg];
         }
-        else if (!strcmp(arg, "-maxit")) {
-            iarg++; maxit = atof(argv[iarg]);
+        // ERROR FUNCTION //
+        else if (!strcmp(arg, "-function_type")) {
+            iarg++; function_type = atoi(argv[iarg]);
         }
         else if (!strcmp(arg, "-penalizing_power")) {
             iarg++; penalizing_power = atof(argv[iarg]);
@@ -277,17 +303,18 @@ int main(int argc, char* argv[]) {
         else if (!strcmp(arg, "-face_weighting")) {
             iarg++; weighting_method = atoi(argv[iarg]);
         }
+        // OPTIMIZATION PARAMETER //
+        else if (!strcmp(arg, "-maxit")) {
+            iarg++; maxit = atoi(argv[iarg]);
+        }
+        else if (!strcmp(arg, "-eps")) {
+            iarg++; eps = atof(argv[iarg]);
+        }
         else if (!strcmp(arg, "-n_threads")) {
             iarg++; omp_set_num_threads(atoi(argv[iarg]));
         }
         else if (!strcmp(arg, "-q")) {
             quiet = true;
-        }
-        else if (!strcmp(arg, "-optimize")) {
-            mode=0;
-        }
-        else if (!strcmp(arg, "-scan")) {
-            mode=1;
         }
         else {
             cerr << "Argument not recognized " << arg << endl;
@@ -298,7 +325,12 @@ int main(int argc, char* argv[]) {
     //check mandatory input
     if (f_vertices.size() == 0) {cerr << "Vertice coordinates not provided" << endl; return 1;}
     if (f_elements.size() == 0) {cerr << "Elements topology not provided" << endl; return 1;}
-
+    
+    if ((function_type < 0) or (function_type) > 2) {
+        cerr << "Error! function type not recognized: " << function_type << endl;
+        return 1;
+    }
+    
     //load mesh
     auto t1 = chrono::high_resolution_clock::now();
     cout << "Read mesh" << endl;
@@ -310,10 +342,36 @@ int main(int argc, char* argv[]) {
     cout << "Number of vertices in mesh: " << mesh.vertices.size() << endl;
     cout << "Number of elements in mesh: " << mesh.elements.size() << endl;
     
+    Error_Function *Ef;
+    if (mode == 0) {
+        if (mode == 0) {
+            switch (function_type) {
+                case 0:
+                    Ef = new Power_Function(penalizing_power);
+                    cout << "Penalize orthogonality error with power\
+ function" << endl;
+                    break;
+                case 1:
+                    Ef = new Inverse_Function (penalizing_power);
+                    cout << "Penalize orthogonality error with inverse\
+ function" << endl;
+                    break;
+                case 2:
+                    Ef = new Log_Function();
+                    cout << "Penalize orthogonality error with logarithm\
+ function" << endl;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    
     int ret = 0;
     switch (mode) {
         case 0:
-            ret = optimize_mesh(&mesh, penalizing_power, weighting_method, maxit, f_output, f_fixed);
+            ret = optimize_mesh(&mesh, Ef, weighting_method, 
+                                maxit, eps, f_output, f_fixed);
             io_mesh.save_vertices_tetgen(f_output);
             break;
         case 1: 

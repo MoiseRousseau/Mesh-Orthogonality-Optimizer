@@ -5,6 +5,7 @@
 #include "Mesh.h"
 #include "Point.h"
 #include "Connection.h"
+#include "Error_Functions.h"
 #include <Eigen/Core>
 
 
@@ -27,17 +28,22 @@ class OrthOpt
         // 0 if fixed
         std::vector<unsigned int> derivative_vertice_ids;
         
+        // WEIGHTING FUNCTION //
+        Error_Function* Ef;
+        
         //TODO constructor when mesh is passed by numpy
         OrthOpt() {};
 
-        OrthOpt(Mesh* m) {
+        OrthOpt(Mesh* m, Error_Function* Ef_=nullptr) {
+            if (Ef_ == nullptr) {Ef_ =  new Id_Function();}
+            Ef = Ef_;
             mesh = m;
             if (mesh->n_connections_internal == 0) {mesh->decompose();};
             n_vertices_to_opt = mesh->n_vertices; //initiate to n_vertices and substract the fixed point);
             face_error.resize(mesh->n_connections_internal);
             face_weight.resize(mesh->n_connections_internal);
             derivative_vertice_ids.resize(mesh->n_vertices);
-            unsigned int index = 0;
+            unsigned int index = -1;
             size_t count = -1;
             for (Vertice* v : mesh->vertices) {
                 count++;
@@ -52,11 +58,13 @@ class OrthOpt
             }
             face_error_derivative.resize(n_vertices_to_opt);
         }
+        
 
         virtual ~OrthOpt() {};
 
 
-        void set_penalizing_power(double x) {penalizing_power = x;}
+        void set_error_function(Error_Function* Ef_) {Ef = Ef_;}
+        
         double getCostFunctionValue() {
             computeCostFunction();
             return cost_function_value;
@@ -109,7 +117,7 @@ class OrthOpt
 
     private:
         Point derivative_E_position(Connection* con) {
-            return ((con->normal - con->cell_center_vector * (1-con->error)) \
+            return ((con->normal - con->cell_center_vector * (con->orthogonality)) \
                     / con->cell_center_vector_norm * 0.25);
         }
 
@@ -135,11 +143,11 @@ class OrthOpt
             else {B = con->vertices[0]; C = con->vertices[1];}
             //compute normal derivative
             if (con->type == 3) {
-                return ((con->cell_center_vector - con->normal*(1-con->error)).cross( \
+                return ((con->cell_center_vector - con->normal*(con->orthogonality)).cross( \
                         *(C->coor)-*(B->coor)) / (2*con->area));
             }
             else {
-                return ((con->cell_center_vector - con->normal*(1-con->error)).cross( \
+                return ((con->cell_center_vector - con->normal*(con->orthogonality)).cross( \
                         *(C->coor)-*(B->coor)) / (con->area));
             }
         }

@@ -15,12 +15,13 @@ class Connection
         std::vector<Vertice*> vertices;
         Vertice* vertice_up = nullptr;
         Vertice* vertice_dn = nullptr;
-        unsigned int type = 0; //face type: tri or quad
+        unsigned int type = 0; //face type: triangle = 3 or quad = 4
         double area = -1; //face area
         Point normal; //face normal, norm = area
         Point cell_center_vector;  //vector linking the two cell center
         double cell_center_vector_norm = 0.; // and its norm
-        double error = -1; //orthogonality error (1-r_f*n_f)
+        double orthogonality = -1; //(r_f*n_f), 1 mean no error, 0 full error
+        double skewness = -1; //TODO
         //double weight = 1; //weighting factor on this connection
 
         Connection() {}
@@ -42,24 +43,29 @@ class Connection
             vertice_dn = v_dn;
         }
         void check_orientation() {
-            compute_error();
-            if (error > 1.) {
+            compute_orthogonality();
+            if (orthogonality < 0.) {
                 auto temp = element_id_up;
                 element_id_up = element_id_dn;
                 element_id_dn = temp;
                 auto temp2 = vertice_up;
                 vertice_up = vertice_dn;
                 vertice_dn = temp2;
-                compute_error();
+                orthogonality = -orthogonality;
             }
         }
 
-        double compute_error() {
+        double compute_orthogonality() {
             compute_cell_center_vector();
             compute_normal();
-            error = 1-cell_center_vector.dot(normal);
-            if (std::abs(error) < 1e-6) {error = 1e-6;}
-            return error;
+            orthogonality = cell_center_vector.dot(normal);
+            if (std::abs(orthogonality) < 1e-6) {orthogonality = 1e-6;}
+            //if (orthogonality > 1) {orthogonality = 1;}
+            return orthogonality;
+        }
+        double compute_skewness() {
+            skewness = -1; //TODO
+            return skewness;
         }
         void compute_cell_center_vector() {
             cell_center_vector = element_id_up->center() - element_id_dn->center();
@@ -72,7 +78,12 @@ class Connection
             normal = u.cross(v);
             area = normal.norm();
             normal /= area;
-            if (type == 3) {area /= 2;}
+            area /= 2;
+            if (type == 4) {
+                Point u = *vertices[3]->coor-*vertices[0]->coor;
+                Point v = *vertices[2]->coor-*vertices[3]->coor;
+                area += u.cross(v).norm()/2;
+            }
         }
 
     protected:

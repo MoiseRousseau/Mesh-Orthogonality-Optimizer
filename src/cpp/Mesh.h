@@ -36,12 +36,12 @@ class Mesh
             }
             elements.clear();
             for (auto con = connections_internal.begin(); 
-                 con != connections_internal.end(); con++) {
+                con != connections_internal.end(); con++) {
                 delete *con;
             }
             connections_internal.clear();
             for (auto con = boundary_connections.begin(); 
-                 con != boundary_connections.end(); con++) {
+                con != boundary_connections.end(); con++) {
                 delete *con;
             }
             boundary_connections.clear();
@@ -87,7 +87,7 @@ class Mesh
         
         //output
         void save_face_non_orthogonality_angle(std::string f_out);
-        void save_face_informations(std::string f_out);
+        void save_face_detailed_informations(std::string f_out);
         void display_stats();
 
 
@@ -95,7 +95,8 @@ class Mesh
         void build_connection(int i, int j, \
                               int k, int h, \
                               int opposite, Element* elem,  \
-                              std::map<std::array<unsigned int, 4>, Connection*> &unique_id_map);
+                              std::map<std::array<unsigned int, 4>, Connection*> &unique_id_map,
+                              std::vector<Connection*> &temp);
 };
 
 #endif // MESH_H
