@@ -51,7 +51,6 @@ class Wrapper_for_LBFGS
 
         OrthOpt* opt;
         LBFGSpp::LBFGSParam<double> param;
-        unsigned int iteration = 0;
 
         Wrapper_for_LBFGS(OrthOpt* opt_in) {
             opt = opt_in;
@@ -60,8 +59,6 @@ class Wrapper_for_LBFGS
         double operator() (const Eigen::VectorXd& x,
                             Eigen::VectorXd& grad) {
             //print info to user
-            iteration++;
-            cout << "Iteration " << iteration << '\n';
             //update vertices position from x first
             opt->update_vertices_position(x);
             //then compute cost and derivative
@@ -74,7 +71,6 @@ class Wrapper_for_LBFGS
                 grad[index+2] = p.z;
                 index += 3;
             }
-            cout << "Cost function: " << opt->cost_function_value << endl;
             //std::ostringstream f_out;
             //f_out << "derivative_it" << iteration << ".dat";
             //opt->save_face_error_derivative(f_out.str());
@@ -164,6 +160,7 @@ int optimize_mesh(Mesh* mesh,
         cout << "Or you ca change the penalization power to make thing work" << endl;
         cout << endl;
         //opt.save_face_error_derivative("derivative_error.dat");
+        throw;
         return 1;
     }
     cout << "Optimized cost function: " << fx << endl;
@@ -214,9 +211,9 @@ non-orthogonality and skewness)"  << endl;
     cout << "\t-o <output file> (Defaut \"out.xyz\")" << endl;
     cout << endl;
     cout << "Error function parameters:" << endl;
-    cout << "\t-function_type <int> (Method to compute penalize error, 0 = power function, 1 = inverse function, 2 = log function, default = 1)" << endl;
+    cout << "\t-function_type <int> (Method to compute penalize error, 0 = power function, 1 = inverse function, 2 = log function, default = 0)" << endl;
     cout << "\t-penalizing_power <float> (Power or inverse function, penalize\
-face error with the specified power, default = 1)" << endl;
+face error with the specified power, default = 1.)" << endl;
     cout << "\t-face_weighting <int> (Method to weight face error, \
 0 = no weighting, 1 = weight by face area,\
 2 = weight by face area inverse, default = 0)"<< endl;
@@ -349,16 +346,21 @@ int main(int argc, char* argv[]) {
                 case 0:
                     Ef = new Power_Function(penalizing_power);
                     cout << "Penalize orthogonality error with power\
- function" << endl;
+ function at power " << penalizing_power << endl;
                     break;
                 case 1:
                     Ef = new Inverse_Function (penalizing_power);
                     cout << "Penalize orthogonality error with inverse\
- function" << endl;
+ function at power " << penalizing_power << endl;
                     break;
                 case 2:
                     Ef = new Log_Function();
                     cout << "Penalize orthogonality error with logarithm\
+ function" << endl;
+                    break;
+                case 3: 
+                    Ef = new Tan_Function();
+                    cout << "Penalize orthogonality error with tangent\
  function" << endl;
                     break;
                 default:

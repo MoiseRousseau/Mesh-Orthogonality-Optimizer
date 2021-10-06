@@ -142,11 +142,19 @@ void Mesh::load_elements_array(unsigned int elements[], unsigned int type[],
 
 void Mesh::save_face_non_orthogonality_angle(std::string f_out) {
     std::ofstream out(f_out);
+    unsigned int inverted_element = 0;
     for (Connection* con : connections_internal) {
         out << con->element_id_dn->natural_id << " ";
         out << con->element_id_up->natural_id << " ";
         //out << std::acos(std::abs(con->orthogonality)) * 57.29583 << std::endl; //57.2583 = 180 / pi
         out << 1-con->compute_orthogonality() << std::endl;
+    	if (con->orthogonality < 0) {
+    	    inverted_element++;
+    	}
+    }
+    if (inverted_element != 0) {
+        std::cout << "WARNING: " <<  inverted_element;
+        std::cout << " inverted element found!" << std::endl;
     }
     out.close();
 }

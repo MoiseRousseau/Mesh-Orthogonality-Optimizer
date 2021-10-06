@@ -14,24 +14,16 @@
 
 
 void OrthOpt::computeCostFunction() {
-    unsigned int inverted_element = 0;
     cost_function_value = 0;
     #pragma omp parallel for
     for (unsigned int count=0; count != mesh->n_connections_internal; count++) {
     	mesh->connections_internal[count]->compute_orthogonality();
-    	if (mesh->connections_internal[count]->orthogonality < 0) {
-    	    inverted_element++;
-    	}
         face_error[count] = face_weight[count] * \
                        Ef->get_value(mesh->connections_internal[count]->orthogonality);
     }
     #pragma omp parallel for reduction (+:cost_function_value)
     for (double err : face_error) {
         cost_function_value += err;
-    }
-    if (inverted_element != 0) {
-        std::cout << "WARNING: " <<  inverted_element;
-        std::cout << " inverted element found!" << std::endl;
     }
 }
 

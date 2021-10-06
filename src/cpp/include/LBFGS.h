@@ -117,6 +117,11 @@ public:
 
             // New gradient norm
             gnorm = m_grad.norm();
+            
+            // Display information to user
+            std::cout << "Iteration " << k << std::endl;
+            std::cout << "Cost function value: " << fx << std::endl;
+            std::cout << "Gradient norm: " << gnorm << std::endl << std::endl;
 
             // Convergence test -- gradient
             if(gnorm <= m_param.epsilon || gnorm <= m_param.epsilon_rel * x.norm())

@@ -73,8 +73,13 @@ class Power_Function: public Error_Function
             penalizing_power = power;
         }
         
-        double get_value(double ortho) {
-            return std::pow(1-ortho, penalizing_power);
+        double get_value(double ortho) { 
+            if (ortho <= 0.) {
+                return std::log(-1); //NaN
+            }
+            else {
+                return std::pow(1-ortho, penalizing_power);
+            }
         }
         double get_derivative(double ortho) {
             return - penalizing_power * std::pow(1-ortho, penalizing_power-1);
@@ -94,7 +99,12 @@ class Inverse_Function: public Error_Function
         }
         
         double get_value(double ortho) {
-            return 1/std::pow(ortho, penalizing_power) - 1;
+            if (ortho <= 0.) {
+                return std::log(-1); //NaN
+            }
+            else {
+                return 1/std::pow(ortho, penalizing_power) - 1;
+            }
         }
         double get_derivative(double ortho) {
             return - penalizing_power * std::pow(ortho, penalizing_power+1);
@@ -105,12 +115,24 @@ class Log_Function: public Error_Function
 {
     public:
         Log_Function() {};
-        
         double get_value(double ortho) {
             return -std::log(ortho);
         }
         double get_derivative(double ortho) {
             return -1/ortho;
+        }
+};
+
+class Tan_Function: public Error_Function
+{
+    public:
+        Tan_Function() {};
+        double get_value(double ortho) {
+            return -std::tan(ortho);
+        }
+        double get_derivative(double ortho) {
+            double cos = std::cos(ortho);
+            return -1/(cos*cos);
         }
 };
 
