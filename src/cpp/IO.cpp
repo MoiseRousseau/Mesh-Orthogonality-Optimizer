@@ -97,4 +97,10 @@ void IO::load_elements_tetgen(std::string filename) {
 }
 
 
+// Medit //
+
+
+// VTK //
+
+// GMSH //
 

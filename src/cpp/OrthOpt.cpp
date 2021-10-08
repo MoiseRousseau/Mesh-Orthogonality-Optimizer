@@ -39,12 +39,12 @@ void OrthOpt::computeCostDerivative()
               p!=face_error_derivative.end(); p++) {
         p->x = 0.; p->y = 0.; p->z = 0.;
     }
-    #pragma omp parallel for private(deriv, index, prefactor) shared(face_error_derivative)
+    #pragma omp parallel for private(con, deriv, index, prefactor) shared(face_error_derivative)
     for (unsigned int count=0; count != mesh->n_connections_internal; count++) {
         con = mesh->connections_internal[count];
         prefactor =  face_weight[count] * Ef->get_derivative(con->orthogonality);
-        if (con->element_id_dn->type == 4 and
-            con->element_id_up->type == 4) { //two tet case 1
+        if (con->element_id_dn->type + con->element_id_up->type == 8) { 
+            //two tet case a
             for (Vertice* p : con->vertices) { //A position
                 if (p->fixed) {continue;}
                 index = derivative_vertice_ids[p->natural_id-1];
@@ -77,6 +77,16 @@ void OrthOpt::computeCostDerivative()
                 #pragma omp atomic update
                 face_error_derivative[index].z += deriv.z;
             }
+        }
+        if (con->element_id_dn->type + con->element_id_up->type == 10 and
+            con->type == 3) { 
+            //triangle between two pyr
+            //TODO
+        }
+        if (con->element_id_dn->type + con->element_id_up->type == 10 and
+            con->type == 4) { 
+            //quad between two pyr
+            //TODO
         }
     }
 }
