@@ -15,7 +15,7 @@ class IO
             mesh = m;
         }
         
-        void load_mesh_auto(std::string);
+        void load_mesh_auto(std::string, std::string, std::string);
         void save_mesh_auto(std::string);
         
         //ASCII meshes
@@ -27,12 +27,19 @@ class IO
         void load_vertices_tetgen(std::string);
         void save_vertices_tetgen(std::string);
         void load_elements_tetgen(std::string);
+        
+        //Medit mesh
+        void load_mesh_medit(std::string);
+        void save_mesh_medit(std::string);
 
         //May add other mesh type here
         void read_PFLOTRAN_mesh(std::string filename);
     
     private:
-    
+        //Medit utils
+        bool s_eqi(std::string, std::string);
+        bool s_begin(std::string, std::string);
+        int s_len_trim(std::string);
 };
 
 #endif // IO_H

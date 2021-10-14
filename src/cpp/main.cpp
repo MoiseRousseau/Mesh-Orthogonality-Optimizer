@@ -203,8 +203,9 @@ non-orthogonality and skewness)"  << endl;
     cout << "\t-optimize (optimize the mesh vertice position - default)" << endl;
     cout << endl;
     cout << "Input mesh:" << endl;
-    cout << "\t-v <path to mesh coordinates in xyz format>" << endl;
-    cout << "\t-e <path to mesh elements defined by their vertices id>" << endl;
+    cout << "\t-v-tetgen <path to tetgen mesh coordinates>" << endl;
+    cout << "\t-e-tetgen <path to tetgen mesh elements>" << endl;
+    cout << "\t-m <path to mesh file (Medit / ...)>" << endl;
     cout << "\t-fixed <path to fixed vertices id> (optional)" << endl;
     cout << endl;
     cout << "Optimized vertices position output (xyz format):" << endl;
@@ -247,8 +248,9 @@ int main(int argc, char* argv[]) {
     //defaut parameter
     std::string f_vertices = "";
     std::string f_elements = "";
+    std::string f_mesh = "";
     std::string f_fixed = "";
-    std::string f_output = "out.xyz";
+    std::string f_output = "out.mesh";
     double penalizing_power = 1.;
     int mode = 0; //0=optimize, 1=scan
     int function_type = 0;
@@ -277,10 +279,13 @@ int main(int argc, char* argv[]) {
             mode=1;
         }
         // INPUT //
-        else if (!strcmp(arg, "-v")) {
+        else if (!strcmp(arg, "-v-tetgen")) {
             iarg++; f_vertices = argv[iarg];
         }
-        else if (!strcmp(arg, "-e")) {
+        else if (!strcmp(arg, "-m")) {
+            iarg++; f_mesh = argv[iarg];
+        }
+        else if (!strcmp(arg, "-e-tetgen")) {
             iarg++; f_elements = argv[iarg];
         }
         else if (!strcmp(arg, "-fixed")) {
@@ -320,8 +325,12 @@ int main(int argc, char* argv[]) {
         iarg++;
     }
     //check mandatory input
-    if (f_vertices.size() == 0) {cerr << "Vertice coordinates not provided" << endl; return 1;}
-    if (f_elements.size() == 0) {cerr << "Elements topology not provided" << endl; return 1;}
+    if ( (f_mesh.size() == 0) and
+         (f_vertices.size() == 0) and
+         (f_elements.size() == 0) ) {
+         cerr << "Mesh not provided" << endl; 
+         return 1;
+    }
     
     if ((function_type < 0) or (function_type) > 2) {
         cerr << "Error! function type not recognized: " << function_type << endl;
@@ -330,12 +339,9 @@ int main(int argc, char* argv[]) {
     
     //load mesh
     auto t1 = chrono::high_resolution_clock::now();
-    cout << "Read mesh" << endl;
     Mesh mesh;
     IO io_mesh(&mesh);
-    //IO::load_mesh_auto(mesh, )
-    io_mesh.load_vertices_tetgen(f_vertices);
-    io_mesh.load_elements_tetgen(f_elements);
+    io_mesh.load_mesh_auto(f_mesh, f_vertices, f_elements);
     cout << "Number of vertices in mesh: " << mesh.vertices.size() << endl;
     cout << "Number of elements in mesh: " << mesh.elements.size() << endl;
     
@@ -374,7 +380,7 @@ int main(int argc, char* argv[]) {
         case 0:
             ret = optimize_mesh(&mesh, Ef, weighting_method, 
                                 maxit, eps, f_output, f_fixed);
-            io_mesh.save_vertices_tetgen(f_output);
+            io_mesh.save_mesh_auto(f_output);
             break;
         case 1: 
             ret = scan_mesh(mesh, f_output);

@@ -40,11 +40,17 @@ void Mesh::decompose() {
         }
         else if (elem->type == 6) { //prisms
             //not optimized, so do not figure
+            //TODO: I must fix the point in this case, else, they would move and degenerate the prisms. Verify
         }
         else if (elem->type == 8) { //hex
             //not optimized, so do not figure
         }
         else {
+            std::cerr << std::endl;
+            std::cerr << "Mesh decompose error" << std::endl;
+            std::cerr << "element type not recognized: " << elem->type;
+            std::cerr << std::endl;
+            std::cerr << std::endl;
             exit(1);
         }
     }
