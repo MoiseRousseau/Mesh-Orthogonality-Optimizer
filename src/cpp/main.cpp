@@ -139,7 +139,7 @@ int optimize_mesh(Mesh* mesh,
     
     //pre-solve
     cout << "Number of vertices to optimize: " << opt.n_vertices_to_opt << endl;
-    mesh->save_face_non_orthogonality_angle("./face_error_initial.txt");
+    //mesh->save_face_non_orthogonality_angle("./face_error_initial.txt");
     cout << endl << "Optimize" << endl;
     
     //solve
@@ -149,7 +149,7 @@ int optimize_mesh(Mesh* mesh,
         niter = solver.minimize(wrapper, x, fx);
     }
     catch (runtime_error) {
-        mesh->save_face_non_orthogonality_angle("./face_error_final.txt");
+        //mesh->save_face_non_orthogonality_angle("./face_error_final.txt");
         throw;
         return 1;
     }
@@ -165,7 +165,7 @@ int optimize_mesh(Mesh* mesh,
     }
     cout << "Optimized cost function: " << fx << endl;
 
-    mesh->save_face_non_orthogonality_angle("./face_error_final.txt");
+    //mesh->save_face_non_orthogonality_angle("./face_error_final.txt");
     return 0;
 }
 
@@ -246,11 +246,11 @@ int main(int argc, char* argv[]) {
 
     print_program_information();
     //defaut parameter
-    std::string f_vertices = "";
-    std::string f_elements = "";
-    std::string f_mesh = "";
-    std::string f_fixed = "";
-    std::string f_output = "out.mesh";
+    std::string f_vertices = ""; //tetgen vertices
+    std::string f_elements = ""; //tetgen element
+    std::string f_mesh = ""; //general mesh (medit / ...)
+    std::string f_fixed = ""; //path to fixed point in the mesh
+    std::string f_output = "out.xyz"; //output name
     double penalizing_power = 1.;
     int mode = 0; //0=optimize, 1=scan
     int function_type = 0;

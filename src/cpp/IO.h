@@ -31,9 +31,10 @@ class IO
         //Medit mesh
         void load_mesh_medit(std::string);
         void save_mesh_medit(std::string);
-
-        //May add other mesh type here
-        void read_PFLOTRAN_mesh(std::string filename);
+        
+        //PFLOTRAN mesh
+        void load_mesh_PFLOTRAN(std::string);
+        void save_mesh_PFLOTRAN(std::string);
     
     private:
         //Medit utils

@@ -19,8 +19,12 @@ void IO::load_mesh_auto(std::string f_mesh,
     
     std::string ext = f_mesh.substr(f_mesh.find_last_of(".")+1);
     if ( (ext.compare("mesh") == 0) or (ext.compare("meshb") == 0) ) {
-        std::cout << "Read Medit format mesh" << std::endl;
+        std::cout << "Read Medit mesh format" << std::endl;
         IO::load_mesh_medit(f_mesh);
+    }
+    else if (ext.compare("ugi") == 0) {
+        std::cout << "Read PFLOTRAN ugi mesh format" << std::endl;
+        IO::load_mesh_PFLOTRAN(f_mesh);
     }
     else {
         std::cerr << std::endl;
@@ -35,11 +39,15 @@ void IO::save_mesh_auto(std::string f_out) {
     std::string ext = f_out.substr(f_out.find_last_of(".")+1);
     if (ext.compare("xyz") == 0) {
         std::cout << "Save optimized vertices in xyz format" << std::endl;
-        IO::save_vertices_tetgen(f_out);
+        IO::save_vertices_xyz(f_out);
     }
     else if ( (ext.compare("mesh") == 0) or (ext.compare("meshb") == 0) ) {
         std::cout << "Save optimized mesh in Medit format" << std::endl;
         IO::save_mesh_medit(f_out);
+    }
+    else if (ext.compare("ugi") == 0) {
+        std::cout << "Save optimized mesh in PFLOTRAN ugi format" << std::endl;
+        IO::save_mesh_PFLOTRAN(f_out);
     }
     else {
         std::cerr << std::endl;
@@ -458,6 +466,88 @@ void IO::save_mesh_medit(std::string filename) {
     out.close();
     return;
 }
+
+
+// PFLOTRAN ugi format//
+void IO::load_mesh_PFLOTRAN(std::string filename) {
+    // X Y Z file
+    double x, y, z;
+    unsigned int n_vertices, n_elements, n_v;
+    std::string type;
+    unsigned int id=0;
+    std::ifstream src(filename);
+    unsigned int count = 0;
+    unsigned int i = 0;
+    std::string line;
+    std::istringstream f;
+    
+    while ( getline(src, line) ) {
+        if (count == 0) { 
+            f.str(line);
+            f >> n_elements;
+            f >> n_vertices;
+            count++;
+            continue;
+        }
+        if (count < n_elements+1) {
+            type = line[0];
+            line.erase(0,2);
+            if (type.compare("T") == 0) n_v = 4;
+            else if (type.compare("P") == 0) n_v = 5;
+            else if (type.compare("W") == 0) n_v = 6;
+            else if (type.compare("H") == 0) n_v = 8;
+            else {
+                std::cerr << "Unknown element type: " << type << std::endl;
+                exit(1);
+            }
+            f.clear();
+            f.str(line);
+            std::vector<unsigned int> ids;
+            for (size_t j=0; j<n_v; j++) {
+                f >> id;
+                ids.push_back(id);
+            }
+            mesh->add_element(ids);
+        }
+        else {
+            f.clear();
+            f.str(line);
+            f >> x >> y >> z;
+            mesh->add_vertice(x,y,z,i+1);
+            i++;
+        }
+        count++;
+    }
+    src.close();
+}
+void IO::save_mesh_PFLOTRAN(std::string filename) {
+    std::ofstream out(filename);
+    // header
+    out << mesh->n_elements << ' ';
+    out << mesh->n_vertices << std::endl;
+    //elements
+    for (Element* e : mesh->elements) {
+        if (e->type == 4) out << 'T';
+        if (e->type == 5) out << 'P';
+        if (e->type == 6) out << 'W';
+        if (e->type == 8) out << 'H';
+        for (unsigned int id : e->vertice_ids) {
+            out << id << ' ';
+        }
+        out << std::endl;
+    }
+    //vertices
+    out << std::scientific;
+    out << std::setprecision(8);
+    for (Vertice* v : mesh->vertices) {
+        out << v->coor->x << ' ';
+        out << v->coor->y << ' ';
+        out << v->coor->z << std::endl;
+    }
+    out.close();
+}
+
+
 
 // VTK //
 
