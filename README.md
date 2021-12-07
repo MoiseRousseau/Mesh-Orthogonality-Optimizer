@@ -57,10 +57,10 @@ Mesh was generated using [Salome](https://salome-platform.org/) and the NETGEN a
 The table below summarizes the mesh statistics and the total number of iteration for the linear solver with the orthogonal correction for the Laplacian to converge (with tolerance 1e-6 and 1e-12).
 
 | Mesh | Mean non-orthogonality (°) | Max non-orthogonality (°) | Solver iteration (1e-6) | Solver iteration (1e-12) |
-|---|---|---|---|
-| Netgen default | 12.4 | 50.7 | 29 | 68 |
+|---|---|---|---|---|
 | OrthOpt n=0.5 | **11.2** | 70.8 | 34 | > 100 |
 | OrthOpt n=1 | 11.7 | 56.9 | 31 | 78 |
+| Netgen default | 12.4 | 50.7 | 29 | 68 |
 | OrthOpt n=3 | 13.6 | 44.1 | 29 | 59 |
 | OrthOpt n=5 | 14.5 | **42.6** | **28** | **52** |
 
