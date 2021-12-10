@@ -11,6 +11,7 @@ Optimize a tetrahedral mesh to minimize its mean non-orthogonality (possibly wei
 * Optimize vertices shared by only tetrahedra (e.g. if the vertices belong to one hex element and 100 tetrahedra, it is NOT optimized).
 * Control the non-orthogonality distribution in the mesh by applying penalization function to the non-orthogonality (power function, inverse function, log function, exponential function).
 * Read and write mesh in various formats (Medit, TetGen, PFLOTRAN for instance)
+* Parallelization of the optimization process through OpenMP
 
 
 ## Installation
@@ -54,6 +55,7 @@ You are ready to go. The plugin is located in the MESH module under the `Mesh/SM
 
 Example of the optimization of a mesh composed of nearly 25000 nodes and 125000 tetrahedra for simulation the flow around a cylinder as this OpenFOAM [tutorial](https://www.openfoam.com/documentation/tutorial-guide/2-incompressible-flow/2.2-flow-around-a-cylinder#x7-390002.2).
 Mesh was generated using [Salome](https://salome-platform.org/) and the NETGEN algorithm with default optimization parameters and refined near the cylinder.
+Mesh was further optimized using OrthOpt considering a power law penalization function with various penalization power `n`.
 The table below summarizes the mesh statistics and the total number of iteration for the linear solver with the orthogonal correction for the Laplacian to converge (with tolerance 1e-6 and 1e-12).
 
 | Mesh | Mean non-orthogonality (°) | Max non-orthogonality (°) | Solver iteration (1e-6) | Solver iteration (1e-12) |

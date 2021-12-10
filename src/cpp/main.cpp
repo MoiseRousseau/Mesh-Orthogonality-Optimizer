@@ -313,7 +313,9 @@ int main(int argc, char* argv[]) {
             iarg++; eps = atof(argv[iarg]);
         }
         else if (!strcmp(arg, "-n_threads")) {
+#if defined _OPENMP
             iarg++; omp_set_num_threads(atoi(argv[iarg]));
+#endif
         }
         else if (!strcmp(arg, "-q")) {
             quiet = true;
