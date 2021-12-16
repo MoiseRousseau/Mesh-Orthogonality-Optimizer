@@ -19,7 +19,7 @@
 
 import qtsalome
 from salome.gui import helper
-import salome
+import salome.smesh.smeshBuilder as smb
 
 class UI:
 
@@ -98,12 +98,12 @@ class UI:
       
   def _selectMeshInput(self, objId):
     self.mesh = objId
-    if isinstance(self.mesh,salome.smesh.smeshBuilder.meshProxy):
-      name = salome.smesh.smeshBuilder.GetName(self.mesh)
+    if isinstance(self.mesh,smb.meshProxy):
+      name = smb.GetName(self.mesh)
     elif isinstance(self.mesh,SMESH._objref_SMESH_Group):
-      name = salome.smesh.smeshBuilder.GetName(self.mesh)
-    elif isinstance(self.mesh,salome.smesh.smeshBuilder.submeshProxy):
-      name = salome.smesh.smeshBuilder.GetName(self.mesh)
+      name = smb.smesh.smeshBuilder.GetName(self.mesh)
+    elif isinstance(self.mesh,smb.submeshProxy):
+      name = smb.smesh.smeshBuilder.GetName(self.mesh)
     else:
       self.mesh = None
       name = ""
