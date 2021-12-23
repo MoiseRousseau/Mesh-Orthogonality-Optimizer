@@ -47,17 +47,24 @@ class UI:
     self.gridLayout_main.addWidget(self.pb_origMeshFile, 0, 1)
     self.gridLayout_main.addWidget(self.le_origMeshFile, 0, 2)
     
+    #function type
+    self.label_function = qtsalome.QLabel(Dialog)
+    self.gridLayout_main.addWidget(self.label_function , 1, 0)
+    self.menu_function = qtsalome.QComboBox(Dialog)
+    self.menu_function.addItems(["Power", "Inverse", "Logarithm", "Exponential"])
+    self.gridLayout_main.addWidget(self.menu_function , 1, 2)
+    
     #penalization
     self.label_penalization = qtsalome.QLabel(Dialog)
     self.le_penalization = qtsalome.QLineEdit(Dialog)
-    self.gridLayout_main.addWidget(self.label_penalization , 1, 0)
-    self.gridLayout_main.addWidget(self.le_penalization, 1, 1)
+    self.gridLayout_main.addWidget(self.label_penalization , 2, 0)
+    self.gridLayout_main.addWidget(self.le_penalization, 2, 2)
     #max it
     self.label_it = qtsalome.QLabel(Dialog)
     self.label_it.setObjectName("label_it")
     self.le_it = qtsalome.QLineEdit(Dialog)
-    self.gridLayout_main.addWidget(self.label_it , 2, 0)
-    self.gridLayout_main.addWidget(self.le_it, 2, 1)
+    self.gridLayout_main.addWidget(self.label_it , 3, 0)
+    self.gridLayout_main.addWidget(self.le_it, 3, 2)
     
     #ok and cancel button
     self.splitter = qtsalome.QSplitter(Dialog)
@@ -65,7 +72,7 @@ class UI:
     self.pb_okCancel = qtsalome.QDialogButtonBox(self.splitter)
     self.pb_okCancel.setOrientation(qtsalome.Qt.Horizontal)
     self.pb_okCancel.setStandardButtons(qtsalome.QDialogButtonBox.Cancel|qtsalome.QDialogButtonBox.Ok)
-    self.gridLayout_main.addWidget(self.splitter, 3, 0)
+    self.gridLayout_main.addWidget(self.splitter, 4, 0)
     self.pb_okCancel.accepted.connect(Dialog.accept)
     self.pb_okCancel.rejected.connect(Dialog.reject)
     
@@ -80,6 +87,7 @@ class UI:
     
     self.pb_origMeshFile.setText("Select")
     self.label_mesh.setText("Select mesh:")
+    self.label_function.setText("Penalization function type:")
     self.label_penalization.setText("Penalization power:")
     self.le_penalization.setText("3")
     self.label_it.setText("Max iteration:")

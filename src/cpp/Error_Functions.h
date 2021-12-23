@@ -123,6 +123,21 @@ class Log_Function: public Error_Function
         }
 };
 
+class Exp_Function: public Error_Function
+{
+    public:
+        double power;
+        Exp_Function(double power_) {
+            power = power_;
+        }
+        double get_value(double ortho) {
+            return std::exp(power*(1-ortho));
+        }
+        double get_derivative(double ortho) {
+            return -power*std::exp(power*(1-ortho));
+        }
+};
+
 class Tan_Function: public Error_Function
 {
     public:

@@ -212,7 +212,7 @@ non-orthogonality and skewness)"  << endl;
     cout << "\t-o <output file> (Defaut \"out.xyz\")" << endl;
     cout << endl;
     cout << "Error function parameters:" << endl;
-    cout << "\t-function_type <int> (Method to compute penalize error, 0 = power function, 1 = inverse function, 2 = log function, default = 0)" << endl;
+    cout << "\t-function_type <int> (Method to compute penalize error, 0 = power function, 1 = inverse function, 2 = log function, 3 = exp function, default = 0)" << endl;
     cout << "\t-penalizing_power <float> (Power or inverse function, penalize\
 face error with the specified power, default = 1.)" << endl;
     cout << "\t-face_weighting <int> (Method to weight face error, \
@@ -334,7 +334,7 @@ int main(int argc, char* argv[]) {
          return 1;
     }
     
-    if ((function_type < 0) or (function_type) > 2) {
+    if ((function_type < 0) or (function_type) > 3) {
         cerr << "Error! function type not recognized: " << function_type << endl;
         return 1;
     }
@@ -366,7 +366,12 @@ int main(int argc, char* argv[]) {
                     cout << "Penalize orthogonality error with logarithm\
  function" << endl;
                     break;
-                case 3: 
+                case 3:
+                    Ef = new Exp_Function(penalizing_power);
+                    cout << "Penalize orthogonality error with exponential\
+ function at power " << penalizing_power << endl;
+                    break;
+                case 4: 
                     Ef = new Tan_Function();
                     cout << "Penalize orthogonality error with tangent\
  function" << endl;

@@ -35,6 +35,10 @@ class IO
         //PFLOTRAN mesh
         void load_mesh_PFLOTRAN(std::string);
         void save_mesh_PFLOTRAN(std::string);
+        
+        //DAT salome mesh
+        void load_mesh_DAT_salome(std::string);
+        void save_mesh_DAT_salome(std::string);
     
     private:
         //Medit utils

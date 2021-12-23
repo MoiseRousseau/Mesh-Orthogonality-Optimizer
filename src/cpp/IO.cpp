@@ -6,6 +6,8 @@
 #include <string>
 #include <iomanip> //set precision
 
+//TODO: look at vertice id order when declaring element
+
 
 void IO::load_mesh_auto(std::string f_mesh, 
                         std::string f_vertices, 
@@ -26,6 +28,10 @@ void IO::load_mesh_auto(std::string f_mesh,
         std::cout << "Read PFLOTRAN ugi mesh format" << std::endl;
         IO::load_mesh_PFLOTRAN(f_mesh);
     }
+    else if (ext.compare("dat") == 0) {
+        std::cout << "Read Salome DAT mesh format" << std::endl;
+        IO::load_mesh_DAT_salome(f_mesh);
+    }
     else {
         std::cerr << std::endl;
         std::cerr << "Read Mesh - ERROR" << std::endl;
@@ -44,6 +50,10 @@ void IO::save_mesh_auto(std::string f_out) {
     else if ( (ext.compare("mesh") == 0) or (ext.compare("meshb") == 0) ) {
         std::cout << "Save optimized mesh in Medit format" << std::endl;
         IO::save_mesh_medit(f_out);
+    }
+    else if (ext.compare("dat") == 0) {
+        std::cout << "Save optimized mesh in Salome DAT format" << std::endl;
+        IO::save_mesh_DAT_salome(f_out);
     }
     else if (ext.compare("ugi") == 0) {
         std::cout << "Save optimized mesh in PFLOTRAN ugi format" << std::endl;
@@ -547,6 +557,80 @@ void IO::save_mesh_PFLOTRAN(std::string filename) {
     out.close();
 }
 
+void IO::load_mesh_DAT_salome(std::string filename) {
+    std::ifstream src(filename);
+    unsigned int n_v, n_e;
+    unsigned int id, code, n_nodes, id_node;
+    double x, y, z;
+    std::istringstream f;
+    std::string line;
+    src >> n_v >> n_e;
+    for (unsigned int i=0; i<n_v; i++) {
+        src >> id >> x >> y >> z;
+        mesh->add_vertice(x,y,z,id);
+    }
+    for (unsigned int i=0; i<n_e; i++) {
+        getline(src, line);
+        f.clear();
+        f.str(line);
+        f >> id >> code;
+        switch (code) {
+            case 304:
+                n_nodes = 4;
+                break;
+            case 305:
+                n_nodes = 5;
+                break;
+            case 306:
+                n_nodes = 6;
+                break;
+            case 308:
+                n_nodes = 8;
+                break;
+            default:
+                n_nodes = 0;
+                break;
+        }
+        if (n_nodes) {
+            std::vector<unsigned int> ids;
+            for (size_t j=0; j<n_nodes; j++) {
+                f >> id_node;
+                ids.push_back(id_node);
+            }
+            mesh->add_element(ids);
+        }
+    }
+    src.close();
+}
+void IO::save_mesh_DAT_salome(std::string filename) {
+    std::ofstream out(filename);
+    // header
+    out << mesh->n_vertices << ' ';
+    out << mesh->n_elements << std::endl;
+    //vertices
+    out << std::scientific;
+    out << std::setprecision(8);
+    for (Vertice* v : mesh->vertices) {
+        out << v->natural_id << ' ';
+        out << v->coor->x << ' ';
+        out << v->coor->y << ' ';
+        out << v->coor->z << std::endl;
+    }
+    out.close();
+    //elements
+    for (Element* e : mesh->elements) {
+        out << e->natural_id << ' ';
+        if (e->type == 4) out << 304;
+        if (e->type == 5) out << 305;
+        if (e->type == 6) out << 306;
+        if (e->type == 8) out << 308;
+        for (unsigned int id : e->vertice_ids) {
+            out << id << ' ';
+        }
+        out << std::endl;
+    }
+    out.close();
+}
 
 
 // VTK //

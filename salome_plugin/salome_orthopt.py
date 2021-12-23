@@ -74,11 +74,12 @@ def OrthOpt_opt(context):
     
     #get parameters
     n = window.le_penalization.text()
+    ftype_code = window.menu_function.currentIndex()
     it = window.le_it.text()
     
     #optimize
     print("\tCall OrthOpt\n")
-    res = subprocess.call(["./OrthOpt", "-m", "mesh.ugi", "-o", "out.xyz", "-penalizing_power", str(n), "-maxit", str(it)], cwd=path)
+    res = subprocess.call(["./OrthOpt", "-m", "mesh.ugi", "-o", "out.xyz", "-function_type", str(ftype_code), "-penalizing_power", str(n), "-maxit", str(it)], cwd=path)
     
     #import mesh
     update_mesh(mesh, path+"out.xyz")
