@@ -7,6 +7,7 @@
     \addtolength{\textheight}{3cm}
     
 \usepackage{amsmath}
+\usepackage{hyperref}
 \usepackage{graphicx}
 
 
@@ -21,25 +22,39 @@ TODO
 
 \section{Introduction}
 
-Numerical simulation. 
-Discretization method. 
-Finite volume solver. 
-Discretization of diffusion operator.
-TPFA vs MPFA. Advantage of TPFA. PEBI grid.
-Several software use the TFPA for the diffusion operator, for example PFLOTRAN \cite{hammond_pflotran_2012}, DuMux \cite{koch_dumux_2021}, PorePy \cite{keilegavlen_porepy_2021}, Open Porous Media flow simulation \cite{rasmussen_the_2021} or OpenFOAM \cite{}, Waiwera %https://waiwera.readthedocs.io/en/latest/setup_mesh.html
-Require orthogonal mesh.
 
-However, orthogonal meshes are rather the exception than the rule, and non-orthogonal meshes could introduce a $O(1)$ error which cannot be reduced by refining the mesh elements.
-Cartesian meshes.
-Octree meshes.
-Voronoi meshes: often not conformal and relying on clipping to fit the modeled domain.
+The finite volume method (FVM) is a classical numerical method to solve complex engineering problem governed by conservation equations such as encountered in computational fluid dynamic \cite{}, heat transfert \cite{}, oil and gas recovery \cite{}, or hydrogeology \cite{}.
+The method relies on a discretized representation of the computational domain (the mesh) on which the governing equations of the system are integrated on mesh elements for cell centered scheme or on a control volume for node center scheme, which are latter converted into surface integral across the boundary by the the use of the Gauss theorem \cite{}. %https://www.sciencedirect.com/science/article/pii/B978012849894100007Xare
+Using appropriate discretization method for the gradient and laplacian operator \cite{}, the discretization process lead to a set of algebraic equations linking the variable of interest to their neighboring value, which can be solve to obtain the solution to the problem.
+
+In this study, the discretization of the diffusion operator was analysed for cell centered scheme on which a single unknown is associated within each mesh element.
+One of the approach to discretize the diffusion term is the classical Two Point Flux Approximation method (TFPA) which consists in approximating the gradient at each face of mesh element using the value associated at both elements sharing the face \cite{moukalled_finite_2016, ferziger_computational_2020}.
+This method possesses the appealing properties to be X and Y \cite{}. %TODO
+It is also used by a number of research and industrial codes such as Fluent \cite{}, OpenFOAM \cite{} PFLOTRAN \cite{hammond_pflotran_2012}, DuMux \cite{koch_dumux_2021}, PorePy \cite{keilegavlen_porepy_2021}, Open Porous Media flow simulation \cite{rasmussen_the_2021} or Waiwera \cite{} among others. %https://waiwera.readthedocs.io/en/latest/setup_mesh.html
+However, for the TPFA method to be accurate, the mesh is required to be orthogonal, i.e. the vector linking the two cell centers must be parallel to the normal of the face shared by the two cells.
+If not, the approximation would introduce a $\mathcal{O}(1)$ error which cannot be avoided \cite{}.
+
+Preservation of the appealing properties of the TPFA discretization thus move the difficulty in generating a orthogonal mesh.
+Such mesh for arbitrary computational domain can be generated using polygonal Voronoï grid, which by construction, create face orthogonal to the vector linking the two cell centers.
+However, such polyhedral mesh are often not conformal and relie on clipping to fit the modeled domain.
 Recent research provide quasi-conformal Voronoi meshes by minimizing the volume of cells empassing a 2D feature \cite{merland_voronoi_2014} or by placing seeds such as no clipping is required \cite{abdelkader_vorocrust_2020}.
-Also, there is many mesher available for generating tetrahedral meshes such as gmsh \cite{geuzaine_gmsh_2007}, TetGen \cite{si_tetgen_2015}, NETGEN \cite{schoberl_netgen_1997}, CGAL \cite{}, or Vorpalite \cite{} among others.
 
-Non-orthogonal meshes such as tetrahedral can still be used along with a appropriated correction such as the deferred correction approach \cite{jasak_error_1996, moukalled_finite_2016}.
-Describe it.
+In the other hand, conformal tetrahedral meshes are easy to generate and often directly integrated within computer-aided engineering (CAE) softwares.
+It also exists a variety of reference codes available such as Gmsh \cite{geuzaine_gmsh_2007}, TetGen \cite{si_tetgen_2015}, NETGEN \cite{schoberl_netgen_1997}, CGAL \cite{}, which are now capable of generating billion of elements in an order of minute \cite{hextrem}.
+Despite these advantages, they don't respect the orthogonality condition.
+
+Nevertheless, non-orthogonal meshes such as tetrahedral can still be used along with a appropriated correction such as the deferred correction approach \cite{jasak_error_1996, moukalled_finite_2016, ferziger_computational_2020}.
+The deferred correction is required where the non-orthogonality of the computational mesh is above 5° \cite{}. %https://www.sciencedirect.com/science/article/pii/S0029549317300596 (see for cell center)
+Mesh orthogonality: normal scalar cell center vector superior to 1/3 is good %file:///tmp/mozilla_moise0/MeshQuality-Appendix-A.pdf
+openfoam: slow convergence for mesh orthogonality above 80° %https://www.sciencedirect.com/science/article/pii/S0029549317300596 (see for cell center)
+They look for orthogonality: 
+%https://www.sciencedirect.com/science/article/pii/S0360544215009068?casa_token=2XncBO8cC2EAAAAA:2ElyHYXlp_7U6AfgEwTn-F8ZWls7tZbjbetgQ6Cm00bxm20JBejOxlf4Go2EnBZUhaajeYneAQ#bib22
+%https://pdfs.semanticscholar.org/1d52/a4f30ed56bb82791c283eba37d15eee582cd.pdf
+%https://sci-hub.wf/10.1051/e3sconf/20171401027
 However, the more the mesh is non-orthogonal, the more iteration it will takes + error \cite{traore_robust_2009}. %it's a guess here, so I need to find reference
-Therefore, improving mesh orthogonality is a way to enhance accuracy of the numerical solution and decrease computational time.
+This therefore suggests that lowering mesh non-orthogonality could increase convergence of the deferred correction, thus saving time and computational ressource.
+Up to date, however, it
+
 
 Variational approach to mesh orthogonality
 
@@ -47,14 +62,8 @@ This study presents an approach for optimizing the tetrahedral mesh orthogonalit
 Approach is decribed and tested for several mesh and diffusive problem.
 Calculation made with OpenFOAM.
 
-Mesh orthogonality: normal scalar cell center vector superior to 1/3 is good %file:///tmp/mozilla_moise0/MeshQuality-Appendix-A.pdf
-openfoam: angle of non orthogonality > 5° require the correction, slow convergence for mesh orthogonality above 80° %https://www.sciencedirect.com/science/article/pii/S0029549317300596 (see for cell center)
 
-They look for orthogonality: 
-%https://www.sciencedirect.com/science/article/pii/S0360544215009068?casa_token=2XncBO8cC2EAAAAA:2ElyHYXlp_7U6AfgEwTn-F8ZWls7tZbjbetgQ6Cm00bxm20JBejOxlf4Go2EnBZUhaajeYneAQ#bib22
-%https://pdfs.semanticscholar.org/1d52/a4f30ed56bb82791c283eba37d15eee582cd.pdf
-%https://sci-hub.wf/10.1051/e3sconf/20171401027
-
+see %10.13140/RG.2.2.25688.39681
 
 
 
@@ -63,8 +72,7 @@ They look for orthogonality:
 
 \subsection{Formulation of optimization problem}
 
-Boundary faces did not needed to be optimized (it lack a point to define the cell center vector).
-Cell of a prisms not considered. Tet and pyramid are optimized. Cell must be either hexa, pyr or tet.
+Fully tetrahedral mesh.
 
 The objective of the optimization was to minimize, for each face, the angle between the face normal and the vector connecting the two cells center sharing the considered face by moving the mesh vertices. 
 Therefore, the objective function to minimize was defined as follow:
@@ -72,37 +80,32 @@ Therefore, the objective function to minimize was defined as follow:
 \begin{equation}
 \begin{aligned}
 & \underset{P}{\text{minimize}}
-& & c(P) = \sum_{f \in faces} E_f \left( r_f^T \cdot n_f, w_f \right)  \\
+& & c(P) = \sum_{f \in faces} w_f E_f \left( r_f^T \cdot n_f \right)  \\
 & \text{subject to}
 & & r_f^T \cdot n_f \geq 0, \\
-& & & P = \{P_i  \} \\
 \end{aligned}
 \label{eq:opt_problem}
 \end{equation}
-$E_f$ is the individual face error defined as a function of the $r_f$ the unit vector in the direction connecting the two cell center sharing the considering face $f$ and $n_f$ the unit face normal (Figure).
+$r_f$ is the unit vector in the direction connecting the two cell center sharing the considering face $f$ and $n_f$ the unit face normal (Figure \ref{}), and thus the dot product measures the face non-orthogonality.
+$E_f$ is the individual face error function which can be used to apply weighting on the face non-orthogonality, for example to penalize high non-orthogonality error versus low error.
 The optimization variables $P$ represent the set of mesh points $P_i$ not lying on the boundary %TODO. 
 %The dot product give the cosinus of the face normal - cell center vector angle which is maximal when both vector are aligned (i.e. the mesh orthogonal at this face). 
 The $w_f$ is a user specified weighting constant factor which allowed give higher importance to some connections compared to other.
-
-Choosing the right function $E_f$ is critical to ensure both a effective mesh orthogonality optimization and the creation of non-inverted elements. 
-
 Minimizing $c$ therefore contributes to decrease the overall non-orthogonality error of the mesh.
+
 This optimization problem constitute a high dimensional problem, while 3D tetrahedral meshes nowaday contains at several thousands of points, and up to billion sometimes \cite{neau_massively_2020}.
-Therefore, optimization was carried out using a gradient descent method such a the BiCGStab algorithm \cite{}.
-This method requires the derivative of the objective function relative to all the point in the mesh, which is detailed in the following section.
+The optimization was thus takled using a gradient-based approach to take advantage of the existence of the objective function derivative (see below) and reduce computation time.
 
-%TODO say we are optimizing point belonging to triangle, not quad, because of an additional equality constraint
-
-
-\begin{figure}[h]
+\begin{figure}[h!]
   \centering
   \includegraphics[width=0.9\textwidth]{figures/cases.png}
   \label{cases_figure}
-  \caption{Example configuration}
+  \caption{Example configuration. Note $A$, $B$ and $C$ can be arbitrary chosen}
 \end{figure}
 
 
-\subsection{Derivation of the objective function}
+
+\subsection{Derivative of the objective function}
 
 \subsubsection{General expression}
 
@@ -127,7 +130,7 @@ The derivative of individual face error $E_f$ according to a mesh vertices $P$ c
 \sum_{f\in\ conf(P=F)} \frac{dE_f}{dF} 
 \end{equation}
 %
-where $f \in conf(P=X)$ states for the faces $f$ for which the point $P$ is in configuration $X$ (either ($A$, $E$ or $F$). 
+where $f \in conf(P=X)$ states for the faces $f$ for which the point $P$ is in configuration $X$ (either $A$, $E$ or $F$, see Figure \ref{cases_figure}). 
 
 
 \subsubsection{Individual face error derivative}
@@ -147,7 +150,8 @@ Expanding the unit vector derivative $du/dP_i$ to link it with its dimensional c
 \frac{du}{dP_i} = \frac{1}{N} \left[ \boldsymbol{I} - \frac{1}{N^2}\ U \otimes U^T \right] \frac{dU}{dP_i}
 \end{equation}
 %
-The previous formula could therefore be used to calculate the derivative of unit vector $n_f$ and $r_f$ relative to any mesh point $P_i$.
+The previous formula to calculate the derivative of unit vector $n_f$ and $r_f$ relative to any mesh point $P_i$.
+The previous formula could therefore be used to calculate 
 
 \subsubsection{Unit normal derivative}
 
@@ -176,98 +180,140 @@ Which can be more compactly writed as:
 r_f^T\cdot \frac{d n_f}{dA}\ = 
  \frac{1}{\| N_f \|} \left[ \left[ r_f^T -  (r_f^T \cdot n_f)\ n_f^T \right]^T \times (C-B) \right]^T
 \end{equation}
+%
+Derivatives according to point $E$ or $F$ are null.
 
 
 
 \subsubsection{Unit cell center derivative}
 
 General expression of the (dimensional) cell center vector $R_f$ writes:
+%
 \begin{equation}
 R_f = J-I
 \end{equation}
-with $J$ the center of the element pointed by the face normal direction and $J$ in the opposite direction.
-Element (mass) center as a function of the element vertices are given in Table \ref{}.
-
-\begin{table}
-\begin{tabular}{|l|l|}
-\hline
-	Element type & Element center $X$\\ \hline
-	Tetrahedron (ABC-E) & $X = (A+B+C+E)/4$\\ \hline
-	Pyramid (ABCD-E) & $X = $\\
-	Wedge (ABC-EFG) & 42\\
-	51 & 52\\
-\hline
-\end{tabular}
-\end{table}
-
-
-Cell center vector depend of the two element types shared by the given face.
-In this study, four elements types 
-
-Derivative of cell center vector and face normal according to mesh vertices required the knowledge of of the configuration of the mesh near the considered faces. Four distinct cases were identified (see X):
-\begin{enumerate}
-  \item Face is a triangle shared by two tetrahedra (common case). 
-  \item Face is a triangle shared by one tetrahedron and one pyramid.
-  \item Face is a triangle shared by two pyramids.
-  \item Face is a quad shared by two pyramids
-\end{enumerate}
-
-In each case, the problem was generalized as follow: let $A$, $B$, $C$ (and $D$) be the three (four) vertices of the considered triangular (quad) face. 
-Let $I$ and $J$ be the center of the two cells sharing the considered face so that the vector $R_f=\|R_f\|\ r_f = \overrightarrow{IJ}$ and the face normal $n_f = \overrightarrow{AB} \cdot \overrightarrow{AC}$ point in the same direction (i.e. $r_f^T \cdot n_f \geq 0$).
-Vertices $E$ and $F$ designed the last vertices of the tetrahedra (pyramid) of center $I$ and $J$ respectively (see X).
-The general problem was therefore to find the derivative of face area $ABC(D)$, the normal vector $n_f$ and the cell center vector $r_f$ according to mesh vertice $P$ if $P$ is either $A$, $E$ or $F$ ($B$, $C$ and $D$ cases are recovered by simply reordering face vertices). 
-
+%
+with $J$ the center of the element pointed by the face normal direction and $I$ in the opposite direction.
+This ensure the scalar product between unit normal and unit cell center vector is positive (i.e. $r_f^T \cdot n_f \geq 0$).
+Mass centers $I$ and $J$ of both tetrahedra (ABC-E) and (ABC-F) are given by:
+%
+\begin{subequations}
+  \begin{align}
+  I &= \frac{A+B+C+E}{4} \\
+  J &= \frac{A+B+C+F}{4}
+  \end{align}
+\end{subequations}
+%
+So the cell center vector $R_f$ expresses:
+%
+\begin{equation}
+R_f = \frac{F-E}4
+\end{equation}
+%
+And derivatives according to $E$ and $F$ are:
+%
+\begin{equation}
+\frac{d n_f}{dF} = - \frac{d n_f}{dE} = \frac{\boldsymbol{I}}4
+\end{equation}
+%
+Derivative according to $A$ is null.
 
 
 \subsection{Numerical implementation}
 
-A example implementation is proposed (REF) and uses the C++ programming language. 
-This program takes as input the vertices coordinate in xyz format, the mesh element topology and the optimization parameters. 
-Then, the mesh is decomposed and the internal connections are built. Optimization is carried using a on-purpose class call OrthOpt which compute the objective function and the derivative according to vertice position. 
-Finally, optimization is carried using the L-BFGS algorithm of the L-BGFSpp library (REF). Stopping criteria include the maximum number of iteration, ..
+A example implementation nammed OrthOpt is proposed at an online GitHub repository (\href{https://github.com/MoiseRousseau/Mesh-Orthogonality-Optimizer}{https://github.com/MoiseRousseau/Mesh-Orthogonality-Optimizer}) and uses the C++ programming language. 
+This program takes as input the mesh to be optimized (in various format such as Medit or TetGen) and the optimization parameters. 
+The mesh is first decomposed, tetrahedron are stored and the internal connections are built. 
+Optimization is then carried using a on-purpose class called OrthOpt which compute the objective function and the derivative according to vertice position. 
+Finally, optimization is carried using the L-BFGS algorithm of the L-BGFSpp library \cite{} until a maximum number of iteration is reached.
+The proposed implementation also benefits from the parallelization using OpenMP up to an arbitrary number of threads for the optimization process.
+Input, output and mesh decomposition are, for instance, done in serial.
 
-The proposed implementation also benefits from the parallelization using OpenMP up to an arbitrary number of threads. 
-
-Speed up.
+The constraint $r_f^T \cdot n_f \geq 0$ was imposed in the optimization by returning a NaN value when the dot product was negative, thus preventing the formation of inverted element.
+%TODO speed up on girhub
 
 
 
 \section{Application to numerical simulation}
 
-\subsection{Example problem}
+\subsection{Problem Studied}
 
-The equation solved. The problem. The mesh.
+A benchmark problem was considered and consisted in solving the Laplace equation $\Delta u = 0$ in a sphere of unit radius $a=1$ submitted to constant value at its surface $u(r,\theta,\phi) = F(\theta,\phi)$ and under steady-state condition (Figure X). %TODO
+This problem possesses an analytical solution in the form of \cite{carslaw_jeager_1957}:
+%
+\begin{equation}
+T(r, \theta, \phi) = \sum_{n=0}^\infty \sum_{m=0}^n \left(\frac{r}{a}\right)^n P_n^m(\cos \theta) \left[ A_{n,m} \cos m\phi + B_{n,m} \sin m\phi \right]
+\end{equation} 
+%
+Where the $P_n$ are the Legendre polynomial of degree $n$, and $A_{n,m}$ and $B_{n,m}$ the coefficients such as:
+%
+\begin{equation}
+F(\theta, \phi) = \sum_{n=0}^\infty \sum_{m=0}^n P_n^m(\cos \theta) \left[ A_{n,m} \cos m\phi + B_{n,m} \sin m\phi \right]
+\end{equation}
+%
 
-Solve with OpenFOAM.
+In this benchmark problem, $A_{0,0} = A_{3,3}=1$ and all other coefficients were considered null.
 
-Must have a analytic solution. 
-%example: https://www.openfoam.com/documentation/tutorial-guide/2-incompressible-flow/2.2-flow-around-a-cylinder#x7-390002.2
+The benchmark problem was both solved analytically and numerically using the OpenFOAM finite volume code on a tetrahedral mesh.
+The LaplacianFoam application was chosen with a unit diffusivity.
+Discretized set of equations was solved using the Geometric Agglomerated Algebraic Multigrid (GAMG) solver combined with a Diagonal-based Incomplete Cholesky (DIC) smoother and a with a relative and absolute tolerance of 1$\times$10\textsuperscript{-3} and 1$\times$10\textsuperscript{-6}, respectively.
 
-\subsection{Orthogonality optimization}
+%Figure of the problem with the right boundary condition F(theta,phi) showed.
 
-Use different penalization power, initial weighting factor. 
-For example, considered $n=1$, $n=3$ and $n=0.5$.
 
-Plot before / after.
+\subsection{Mesh generation and optimization}
 
-\subsection{Numerical simulation results}
+Mesh were generated using the open-source computer-aided design software Salome.
+The reference mesh which was latter optimized in several manner, was generated using the NETGEN algorithm \cite{schrobert_netgen} and consisted in 400~000 tetrahedra with a mean volume of X (total volume of the sphere: X).
+A structured mesh composed of 216~000 elements with nearly 200~000 hexahedra was also generated to compare the accuracy of the numerical simulation of the non-orthogonal (reference and optimzed) meshes versus an orthogonal mesh..
 
-Simulation with original mesh without correction, with correction.
+The individual face error weighting function $E_f$ (equation \ref{}) was chosen as different type to study its influence on the final optimized mesh.
+Therefore, a power function $E_f(x) = (1-x)^n$, an exponential function $E_f(x) = \exp \left[n(1-x) \right]$ and an inverse function $E_f(x) = 1/x^n$ with $n$ a penalization power were considered.
+For the three function, the larger the penalization power $n$, the higher the penalization of the high non-orthogonality face is.
 
-Compare accuracy to optimized mesh using the different penalization power.
+Reference mesh was optimized using the present variational approach and the proposed implementation with 200 L-BFGS iteration. 
+Considering first the exponential weighting function, distribution of the face non-orthogonality showed only slight modification of the distribution for a penalization power $n \leq 20$ (Figure \ref{orthogonality_distribution}a).
 
-Compare simulation time.
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.99\textwidth]{simulation/sphere/mesh_compare/mesh_compare.pdf}
+  \label{orthogonality_distribution}
+  \caption{Distribution of face non-orthogonality in the optimized meshes considering (a) an exponential weighting function, (b) a power weighting function and (c) an inverse function for various penalization power $n$. The black curve the reference, unoptimized mesh generated with the NETGEN algorithm.}
+\end{figure}
 
-\section{Results analysis}
 
-\subsection{Penalizing high error}
-High orthogonality error could be more penalized by applying a power-law to individual face error. 
 
-One may want to weigth the cost function with the face area in order to avor face orthogonality with high area. 
-This weighting had also the advantage of possessing a less complicate derivative. 
-However, meshes are often refined in sensitive place with low area faces, and therefore, this weigthing could be counter-productive in that case.
+\subsection{Simulation Using Deferred Correction}
+
+Defered correction according to Jasak \cite{}.
+
+Convergence versus iteration.
+
+
+\subsection{Comparing Numerical and Analytical Solutions}
+
+
+
+
+
+
+\section{Discussion}
+
+\subsection{Influence of Penalization Function}
+
+Choosing the right function $E_f$ is critical to ensure both a effective mesh orthogonality optimization and the creation of non-inverted elements. 
+For example, choosing $E_f$ as a power law function (i.e. $E_f=w_f (1-r_f^T\cdot n_f)^n$) with a penalization power $n=5$ would decrease the mean non orthogonality of the mesh.
+At the opposite, a high penalization power (e.g. $n=5$) would preferentially decreases the non-orthogonality of internal faces with a high error.
+
+
+\subsection{Conductive and Diffusive Problems}
+
+Influence on mesh skewness
 
 \subsection{Discussion}
+
+Cell of a prisms not considered. Tet and pyramid are optimized. Cell must be either hexa, pyr or tet.
+%TODO say we are optimizing point belonging to triangle, not quad, because of an additional equality constraint
 
 Anisotropy can't work.
 Unless grid are K orthogonal \cite{heinemann_modelling_1991}.
