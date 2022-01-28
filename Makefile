@@ -1,21 +1,20 @@
-#template taken from https://github.com/TheNetAdmin/Makefile-Templates
 
-# tool macros
+# tool variables
 CC := g++
 CCFLAGS := -fopenmp
 DBGFLAGS := -g
 CCOBJFLAGS := $(CCFLAGS) -c  -fPIC
 
-# path macros
+# path variables
 BIN_PATH := build/bin
 OBJ_PATH := build/obj
 SRC_PATH := src/cpp
 DBG_PATH := build/debug
 
-# lib macros
+# lib variables
 EIGEN_LIB = /usr/include/eigen3
 
-# compile macros
+# executable name
 TARGET_NAME := OrthOpt
 ifeq ($(OS),Windows_NT)
 	TARGET_NAME := $(addsuffix .exe,$(TARGET_NAME))
@@ -24,7 +23,7 @@ TARGET := $(BIN_PATH)/$(TARGET_NAME)
 TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
 
 # src files & obj files
-SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c*)))
+SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.cpp*)))
 OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 OBJ_DEBUG := $(addprefix $(DBG_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 
@@ -42,14 +41,14 @@ default: makedir all
 $(TARGET): $(OBJ)
 	$(CC) $(CCFLAGS) -o $@ $(OBJ)
 
-$(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
+$(OBJ_PATH)/%.o: $(SRC_PATH)/%.cpp
 	$(CC) $(CCOBJFLAGS) -I$(EIGEN_LIB) -o $@ $<
-
-$(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
-	$(CC) $(CCOBJFLAGS) -I$(EIGEN_LIB) $(DBGFLAGS) -o $@ $<
 
 $(TARGET_DEBUG): $(OBJ_DEBUG)
 	$(CC) $(CCFLAGS) $(DBGFLAGS) $(OBJ_DEBUG) -o $@
+	
+$(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
+	$(CC) $(CCOBJFLAGS) -I$(EIGEN_LIB) $(DBGFLAGS) -o $@ $<
 
 # phony rules
 .PHONY: makedir
