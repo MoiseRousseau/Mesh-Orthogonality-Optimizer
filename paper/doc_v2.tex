@@ -236,13 +236,24 @@ The constraint $r_f^T \cdot n_f \geq 0$ was imposed in the optimization by retur
 
 \section{Application to numerical simulation}
 
-\subsection{Problem Studied}
+\subsection{Benchmark Problem}
 
-A benchmark problem was considered and consisted in solving the Laplace equation $\Delta u = 0$ in a sphere of unit radius $a=1$ submitted to constant value at its surface $u(r,\theta,\phi) = F(\theta,\phi)$ and under steady-state condition (Figure X). %TODO
-This problem possesses an analytical solution in the form of \cite{carslaw_jeager_1957}:
+The proposed methodology for mesh optimization was tested against solving the steady-state Laplace equation $\Delta u = 0$ in a ball of unit radius $a=1$ with a Dirichlet boundary condition applied at its surface $u(r,\theta,\phi) = F(\theta,\phi)$. %TODO
+This problem was solved numerically on a tetrahedral mesh with the OpenFOAM finite volume code \cite{} and using the LaplacianFoam application built-in application.
+The reference, orthogonality-unoptimized mesh was generated using the open-source computer-aided design software Salome using the NETGEN algorithm \cite{schrobert_netgen}, and consisted in approximately 400~000 tetrahedra.
+The Geometric Agglomerated Algebraic Multigrid (GAMG) solver combined with a Diagonal-based Incomplete Cholesky (DIC) smoother was used to solve the discretized set of equation. 
+Relative and absolute tolerances were 1$\times$10\textsuperscript{-3} and 1$\times$10\textsuperscript{-6} respectively.
+
+OpenFOAM relies on the TPFA method for discretization of the diffusion operator, which results in $\mathcal{O}(1)$ error on such tetrahedral mesh.
+The iterative deferred correction approach implemented in OpenFOAM was also used to minimize the cross-diffusion error emerging from mesh non-orthogonality.
+Therefore, the objective of this benchmark was (1) to assess the performance of the mesh orthogonality optimizer in terms of error relative to the true analytical solution of the Dirichlet BC - Laplacian ball, and (2) in terms of deffered correction convergence speed.
+Multiple error function $E_f$ were considered and their influence on the performance of the mesh orthogonality optimizer are discussed below.
+Several optimized meshes with different error function $E_f$ were considered to assess the influence of the error function on the performance of the optimization (see next paragraph).
+
+The previous Dirichlet BC - Laplacian ball problem possesses an analytical solution in the form of \cite{carslaw_jeager_1957}:
 %
 \begin{equation}
-T(r, \theta, \phi) = \sum_{n=0}^\infty \sum_{m=0}^n \left(\frac{r}{a}\right)^n P_n^m(\cos \theta) \left[ A_{n,m} \cos m\phi + B_{n,m} \sin m\phi \right]
+u(r, \theta, \phi) = \sum_{n=0}^\infty \sum_{m=0}^n \left(\frac{r}{a}\right)^n P_n^m(\cos \theta) \left[ A_{n,m} \cos m\phi + B_{n,m} \sin m\phi \right]
 \end{equation} 
 %
 Where the $P_n$ are the Legendre polynomial of degree $n$, and $A_{n,m}$ and $B_{n,m}$ the coefficients such as:
@@ -252,26 +263,27 @@ F(\theta, \phi) = \sum_{n=0}^\infty \sum_{m=0}^n P_n^m(\cos \theta) \left[ A_{n,
 \end{equation}
 %
 
-In this benchmark problem, $A_{0,0} = A_{3,3}=1$ and all other coefficients were considered null.
+In this benchmark problem, $A_{0,0} = A_{3,3} = B_{2,2} =1$ and all other coefficients were considered null.
 
-The benchmark problem was both solved analytically and numerically using the OpenFOAM finite volume code on a tetrahedral mesh.
-The LaplacianFoam application was chosen with a unit diffusivity.
-Discretized set of equations was solved using the Geometric Agglomerated Algebraic Multigrid (GAMG) solver combined with a Diagonal-based Incomplete Cholesky (DIC) smoother and a with a relative and absolute tolerance of 1$\times$10\textsuperscript{-3} and 1$\times$10\textsuperscript{-6}, respectively.
 
 %Figure of the problem with the right boundary condition F(theta,phi) showed.
 
 
-\subsection{Mesh generation and optimization}
+\subsection{Mesh optimization}
 
-Mesh were generated using the open-source computer-aided design software Salome.
-The reference mesh which was latter optimized in several manner, was generated using the NETGEN algorithm \cite{schrobert_netgen} and consisted in 400~000 tetrahedra with a mean volume of X (total volume of the sphere: X).
-A structured mesh composed of 216~000 elements with nearly 200~000 hexahedra was also generated to compare the accuracy of the numerical simulation of the non-orthogonal (reference and optimzed) meshes versus an orthogonal mesh..
+The reference, NETGEN-generated mesh was nexxt optimized using the proposed approach in this paper and using several different error function $E_f$.
+In particular, a power function $E_f(x) = (1-x)^n$, an exponential function $E_f(x) = \exp \left[n(1-x) \right]$ and an inverse function $E_f(x) = 1/x^n$ were considered.
+The $n$ parameter, called the penalization power, was also adapted to analyze further its influence on the final mesh.
+For each mesh optimization, 200 L-BGFS iteration were carried.
+In the rest of this section, the distributions of the non-orthogonality angle in the optimized mesh were analyzed to compared the different error function and penalization power.
 
-The individual face error weighting function $E_f$ (equation \ref{}) was chosen as different type to study its influence on the final optimized mesh.
-Therefore, a power function $E_f(x) = (1-x)^n$, an exponential function $E_f(x) = \exp \left[n(1-x) \right]$ and an inverse function $E_f(x) = 1/x^n$ with $n$ a penalization power were considered.
+
+%A structured mesh composed of 216~000 elements with nearly 200~000 hexahedra was also generated to compare the accuracy of the numerical simulation of the non-orthogonal (reference and optimzed) meshes versus an orthogonal mesh.
+
+ 
 For the three function, the larger the penalization power $n$, the higher the penalization of the high non-orthogonality face is.
 
-Reference mesh was optimized using the present variational approach and the proposed implementation with 200 L-BFGS iteration. 
+
 Considering first the exponential weighting function, distribution of the face non-orthogonality showed only slight modification of the distribution for a penalization power $n \leq 20$ (Figure \ref{orthogonality_distribution}a).
 
 \begin{figure}[h!]
@@ -283,7 +295,7 @@ Considering first the exponential weighting function, distribution of the face n
 
 
 
-\subsection{Simulation Using Deferred Correction}
+\subsection{Nu}
 
 Defered correction according to Jasak \cite{}.
 
@@ -298,6 +310,10 @@ Convergence versus iteration.
 
 
 \section{Discussion}
+
+In all the cases simulated, decrease of error without correction and decrease of GAMG iteration. 
+So no counterproductive results were obtain.
+User may used this everytimes
 
 \subsection{Influence of Penalization Function}
 
