@@ -9,30 +9,33 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 #set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -ftree-vectorize -ffast-math")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ftree-vectorize -ffast-math")
 
 #------------------
 # Define target 
 #------------------
 include_directories(src)
-add_executable (helloDemo 
-    demo.cxx 
-    demo_b.cxx
+add_executable (OrthOpt 
+    src/main.cpp
+    src/Mesh.cpp
+    src/OrthOpt.cpp
+    src/IO.cpp
 )
-set_target_properties(qcm PROPERTIES VERSION ${PROJECT_VERSION} PREFIX "" SUFFIX ".so")
+#set_target_properties(OrthOpt PROPERTIES VERSION ${PROJECT_VERSION})
 
-set( EIGEN3_INCLUDE_DIR "$ENV{EIGEN3_INCLUDE_DIR}" )
-if( NOT EIGEN3_INCLUDE_DIR )
-    message( FATAL_ERROR "Please point the environment variable EIGEN3_INCLUDE_DIR to the include directory of your Eigen3 installation.")
-endif()
-include_directories ( "${EIGEN3_INCLUDE_DIR}" )
+# Search Eigen3
+message("Searching for Eigen3 library")
+find_package(
+    Eigen3 REQUIRED
+    HINTS ${EIGEN3_PATH}
+)
+message("Eigen3 library found in: ${EIGEN3_INCLUDE_DIR}")
 
-#------------------
-# Link dependencies
-#------------------
-target_link_libraries(qcm ${PYTHON_LIBRARIES} ${CUBA_LIBRARY} ${LAPACK_LIBRARIES})
-target_include_directories(qcm PUBLIC src_qcm src_ed src_python src_util ${PYTHON_INCLUDE_DIRS} ${NUMPY_INCLUDE_DIR}/numpy ${CUBA_DIR})
+#include external dependencies (LBFGS++)
+set( LBGFSpp "${CMAKE_SOURCE_DIR}/external" )
+message("${LBGFSpp}")
 
+target_include_directories ( OrthOpt PRIVATE ${EIGEN3_INCLUDE_DIR} ${LBGFSpp} )
 
 #------------------
 # Parallelization using OpenMP
@@ -45,7 +48,6 @@ endif()
 
 # install(TARGETS qcm DESTINATION ${PYTHON_INCLUDE_DIRS}/site-packages)
 # install(TARGETS qcm DESTINATION ${CMAKE_SOURCE_DIR}/pyqcm)
-install(TARGETS qcm DESTINATION pyqcm)
+install(TARGETS OrthOpt DESTINATION OrthOpt)
 
-add_test(OrthOpt)
 

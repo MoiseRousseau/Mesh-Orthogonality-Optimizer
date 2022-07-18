@@ -12,7 +12,7 @@
 
 
 #include <Eigen/Core>
-#include "include/LBFGS.h"
+#include "LBFGS.h"
 
 using namespace std;
 

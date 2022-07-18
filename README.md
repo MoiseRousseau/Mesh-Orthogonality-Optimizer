@@ -1,6 +1,9 @@
-# OrthOpt: a tetrahedral mesh orthogonality optimizer
+# OrthOpt: a mesh orthogonality optimizer
 
 Optimize a tetrahedral mesh to minimize its mean non-orthogonality (possibly weighted).
+
+This implementation is naive but sufficient for demonstration purpose, but can still optimize a 1M elements mesh in few minutes.
+If you had time to optimize it, feel free to contribute!
 
 
 ## Features
@@ -18,7 +21,9 @@ Optimize a tetrahedral mesh to minimize its mean non-orthogonality (possibly wei
 
 1. Install dependencies: `sudo apt install libeigen3-dev`
 2. Clone this repository `git clone https://github.com/MoiseRousseau/Mesh-Orthogonality-Optimizer.git OrthOpt && cd OrthOpt`
-3. Launch the makefile `make`
+3. Create a build directory: `mkdir build && cd build`
+4. Configure with CMake: `cmake ..`
+5. Build with `make`
 
 
 ## Use
@@ -77,7 +82,6 @@ Decrease of the maximum resulted in fewer iteration for the solver to converge, 
 ## TODO
 
 * Parallel decomposition of mesh (maybe use some dedicaced library)
-* Hybrid parallelization (OpenMP and MPI) ? GPU computing ?
 * Some code optimization (e.g. store vertices coordinate as one table, and not as a structure)
 * More IO format
 * Add more examples
