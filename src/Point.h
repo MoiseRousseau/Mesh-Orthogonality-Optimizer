@@ -41,6 +41,11 @@ class Point
                          z*A->x - A->z*x,
                          x*A->y - A->x*y);
         }
+        
+        friend std::ostream& operator<<(std::ostream& os, const Point& p) {
+            os << p.x << ' ' << p.y << ' ' << p.z;
+            return os;
+        }
 
     protected:
 

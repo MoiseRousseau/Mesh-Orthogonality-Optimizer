@@ -13,6 +13,7 @@
 
 #include <Eigen/Core>
 #include "LBFGS.h"
+#include <fstream>
 
 using namespace std;
 
@@ -62,30 +63,21 @@ class Wrapper_for_LBFGS
             //update vertices position from x first
             opt->update_vertices_position(x);
             //then compute cost and derivative
-            opt->computeCostDerivative();
-            unsigned int index = 0;
-            for (Point p : opt->face_error_derivative) {
-                //cout << p.x << " " << p.y << ' ' << p.z << '\n';
-                grad[index] = p.x;
-                grad[index+1] = p.y;
-                grad[index+2] = p.z;
-                index += 3;
-            }
+            opt->computeCostDerivative(grad);
             //std::ostringstream f_out;
             //f_out << "derivative_it" << iteration << ".dat";
-            //opt->save_face_error_derivative(f_out.str());
             return opt->cost_function_value;
         }
 
         Eigen::VectorXd initialize_solution_vec() {
-            Eigen::VectorXd x = Eigen::VectorXd::Zero(3*opt->n_vertices_to_opt);
+            Eigen::VectorXd x = Eigen::VectorXd::Zero(opt->mesh->dim * opt->n_vertices_to_opt);
             unsigned int index=0;
             for (Vertice* v : opt->mesh->vertices) {
                 if (v->fixed == false) {
                     x[index] = v->coor->x;
                     x[index+1] = v->coor->y;
-                    x[index+2] = v->coor->z;
-                    index += 3;
+                    if (opt->mesh->dim != 2) x[index+2] = v->coor->z;
+                    index += opt->mesh->dim;
                 }
             }
             return x;
@@ -98,8 +90,9 @@ class Wrapper_for_LBFGS
 
 int optimize_mesh(Mesh* mesh, 
                   Error_Function* Ef, int weighting_method,
-                  int maxit, double eps,
-                  std::string f_output, std::string f_fixed) { 
+                  int maxit, double eps, double eps_rel,
+                  std::string f_output, 
+                  std::vector<unsigned int> ids_fixed) { 
     
     
     //set up optimization problem class
@@ -114,16 +107,10 @@ int optimize_mesh(Mesh* mesh,
         case 2: 
             opt.weight_by_area_inverse();
             break;
-        case 3:
-            opt.weight_by_volume_inverse();
-            break;
     }
+    
     //fix point
-    if (f_fixed.length() >= 1) {
-        std::vector<unsigned int> ids_fixed;
-        //TODO
-        opt.set_fixed_vertices(ids_fixed);
-    }
+    opt.set_fixed_vertices(ids_fixed);
     
     //setup optimizer
     Wrapper_for_LBFGS wrapper(&opt);
@@ -134,6 +121,7 @@ int optimize_mesh(Mesh* mesh,
     LBFGSpp::LBFGSParam<double> param;
     param.max_iterations = maxit;
     param.epsilon = eps;
+    param.epsilon_rel = eps_rel;
     param.max_linesearch = 100;
     LBFGSpp::LBFGSSolver<double> solver(param);
     
@@ -187,7 +175,7 @@ void print_program_information() {
     cout << " #                                         #" << endl;
     cout << " #  OrthOpt: Mesh Orthogonality Optimizer  #" << endl;
     cout << " #                                         #" << endl;
-    cout << " #        By: Moise Rousseau (2020)        #" << endl;
+    cout << " #        By: Moise Rousseau (2022)        #" << endl;
     cout << " #                                         #" << endl;
     cout << " ###########################################" << endl;
     cout << endl;
@@ -205,11 +193,12 @@ non-orthogonality and skewness)"  << endl;
     cout << "Input mesh:" << endl;
     cout << "\t-v-tetgen <path to tetgen mesh coordinates>" << endl;
     cout << "\t-e-tetgen <path to tetgen mesh elements>" << endl;
-    cout << "\t-m <path to mesh file (Medit / ...)>" << endl;
+    cout << "\t-m <path to mesh file (Medit / Salome DAT / PFLOTRAN)>" << endl;
     cout << "\t-fixed <path to fixed vertices id> (optional)" << endl;
+    cout << "\t-dimension <2/3> (Mesh dimension, default 3 if not specified in mesh format, e.g. Medit)" << endl;
     cout << endl;
     cout << "Optimized vertices position output (xyz format):" << endl;
-    cout << "\t-o <output file> (Defaut \"out.xyz\")" << endl;
+    cout << "\t-o <output file> (Default \"out.xyz\", output format deduced from extension)" << endl;
     cout << endl;
     cout << "Error function parameters:" << endl;
     cout << "\t-function_type <int> (Method to compute penalize error, 0 = power function, 1 = inverse function, 2 = log function, 3 = exp function, default = 0)" << endl;
@@ -218,11 +207,12 @@ face error with the specified power, default = 1.)" << endl;
     cout << "\t-face_weighting <int> (Method to weight face error, \
 0 = no weighting, 1 = weight by face area,\
 2 = weight by face area inverse, default = 0)"<< endl;
-    cout << "\t-face_weighting_file <path>" << endl;
+    //cout << "\t-face_weighting_file <path>" << endl;
     cout << endl;
     cout << "Optimization parameters:" << endl;
-    cout << "\t-maxit <int> (Maximum number of iteration, default = 20)" << endl;
-    //cout << "\t-eps <value> ()" << endl;
+    cout << "\t-maxit <int> (Maximum number of iteration, default = 100)" << endl;
+    cout << "\t-eps <value> (Absolute value of gradient norm for termination, default 1e-6)" << endl;
+    cout << "\t-eps_rel <value> (Relative value of gradient norm for termination, default 1e-6)" << endl;
     cout << "Miscellaneous parameters:" << endl;
     cout << "\t-q (Quiet operation)" << endl;
     cout << "\t-n_threads <int> (Number of thread to run in parallel,\
@@ -254,11 +244,12 @@ int main(int argc, char* argv[]) {
     double penalizing_power = 1.;
     int mode = 0; //0=optimize, 1=scan
     int function_type = 0;
-    int maxit = 20;
+    int maxit = 100;
     double eps = 1e-6;
+    double eps_rel = 1e-6;
     int weighting_method = 0; //0=no weighting, 1=face area, 2=face area inverse
     bool quiet = false;
-    bool surface = false;
+    int dim = 3;
 
     //parse input
     if (argc < 2 or get_argument(argc, argv, "-h") != 0) {
@@ -291,6 +282,9 @@ int main(int argc, char* argv[]) {
         else if (!strcmp(arg, "-fixed")) {
             iarg++; f_fixed = argv[iarg];
         }
+        else if (!strcmp(arg, "-dimension")) {
+            iarg++; dim = atoi(argv[iarg]);
+        }
         // OUTPUT //
         else if (!strcmp(arg, "-o")) {
             iarg++; f_output = argv[iarg];
@@ -312,6 +306,9 @@ int main(int argc, char* argv[]) {
         else if (!strcmp(arg, "-eps")) {
             iarg++; eps = atof(argv[iarg]);
         }
+        else if (!strcmp(arg, "-eps_rel")) {
+            iarg++; eps_rel = atof(argv[iarg]);
+        }
         else if (!strcmp(arg, "-n_threads")) {
 #if defined _OPENMP
             iarg++; omp_set_num_threads(atoi(argv[iarg]));
@@ -326,6 +323,7 @@ int main(int argc, char* argv[]) {
         }
         iarg++;
     }
+    
     //check mandatory input
     if ( (f_mesh.size() == 0) and
          (f_vertices.size() == 0) and
@@ -343,7 +341,9 @@ int main(int argc, char* argv[]) {
     auto t1 = chrono::high_resolution_clock::now();
     Mesh mesh;
     IO io_mesh(&mesh);
+    mesh.dim = dim;
     io_mesh.load_mesh_auto(f_mesh, f_vertices, f_elements);
+    cout << "Mesh dimension: " << mesh.dim << endl;
     cout << "Number of vertices in mesh: " << mesh.vertices.size() << endl;
     cout << "Number of elements in mesh: " << mesh.elements.size() << endl;
     
@@ -382,11 +382,22 @@ int main(int argc, char* argv[]) {
         }
     }
     
+    // retrieve fixed point
+    std::vector<unsigned int> ids_fixed;
+    unsigned int id_fixed;
+    if (f_fixed.size() != 0) {
+        std::ifstream src_fixed(f_fixed);
+        while (src_fixed >> id_fixed) {
+            ids_fixed.push_back(id_fixed);
+        }
+        src_fixed.close();
+    }
+    
     int ret = 0;
     switch (mode) {
         case 0:
             ret = optimize_mesh(&mesh, Ef, weighting_method, 
-                                maxit, eps, f_output, f_fixed);
+                                maxit, eps, eps_rel, f_output, ids_fixed);
             io_mesh.save_mesh_auto(f_output);
             break;
         case 1: 

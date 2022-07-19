@@ -121,11 +121,18 @@ public:
             // Display information to user
             std::cout << "Iteration " << k << std::endl;
             std::cout << "Cost function value: " << fx << std::endl;
-            std::cout << "Gradient norm: " << gnorm << std::endl << std::endl;
+            std::cout << "Gradient norm: " << gnorm << std::endl;
+            std::cout << "Solution vector norm: " << x.norm() << std::endl << std::endl;
 
             // Convergence test -- gradient
-            if(gnorm <= m_param.epsilon || gnorm <= m_param.epsilon_rel * x.norm())
+            if (gnorm <= m_param.epsilon)
             {
+                std::cout << "Converged! Termination on absolute gradient norm" << std::endl;
+                return k;
+            }
+            if (gnorm <= m_param.epsilon_rel * x.norm())
+            {
+                std::cout << "Converged! Termination on relative gradient norm" << std::endl;
                 return k;
             }
             // Convergence test -- objective function value

@@ -14,6 +14,7 @@ class Mesh
 {
     public:
 
+        unsigned int dim = 3;
         unsigned int n_vertices = 0;
         std::vector<Vertice*> vertices;
         unsigned int n_elements = 0;
@@ -46,8 +47,15 @@ class Mesh
             }
             boundary_connections.clear();
         };
-
+        
         //adding one vertices and one element at a time
+        void add_vertice(double x, double y, unsigned int id) {
+            //note here: we explicitely ask for vertice id since they are used
+            // to defined the elements.
+            n_vertices += 1;
+            Vertice* A = new Vertice(x,y,id);
+            vertices.push_back(A);
+        }
         void add_vertice(double x, double y, double z, unsigned int id) {
             //note here: we explicitely ask for vertice id since they are used
             // to defined the elements.
@@ -61,7 +69,8 @@ class Mesh
             for (auto id = ids.begin(); id != ids.end(); id++) {
                 elem->vertice_ids.push_back(*id);
             }
-            elem->type = ids.size();
+            if (dim == 2) elem->type = -ids.size();
+            else elem->type = ids.size();
             elem->natural_id = n_elements;
             elements.push_back(elem);
         }

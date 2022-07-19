@@ -181,7 +181,12 @@ void IO::load_mesh_medit(std::string filename) {
         if ( s_eqi ( text, "CORNERS" ) ) {
             keyword = "SKIP";
         }
-        else if ( s_begin ( text, "DIMENSION" ) ) {}
+        else if ( s_begin ( text, "DIMENSION 2" ) ) {
+            mesh->dim = 2;
+        }
+        else if ( s_begin ( text, "DIMENSION 3" ) ) {
+            mesh->dim = 3;
+        }
         else if ( s_eqi ( text, "EDGES" ) ) {
             keyword = "SKIP";
         }
@@ -218,23 +223,29 @@ void IO::load_mesh_medit(std::string filename) {
         }
         else if ( s_eqi ( text, "TETRAHEDRA" ) ||
                   s_eqi ( text, "TETRAHEDRONS" ) ) {
-            keyword = "TETRAHEDRONS";
+            if (mesh->dim == 3) keyword = "TETRAHEDRONS";
+            else keyword = "SKIP";
         }
         else if ( s_eqi ( text, "PRISMS" ) ) {
-            keyword = "PRISMS";
+            if (mesh->dim == 3) keyword = "PRISMS";
+            else keyword = "SKIP";
         }
         else if ( s_eqi ( text, "PYRAMIDS" ) ) {
-            keyword = "PYRAMIDS";
+            if (mesh->dim == 3) keyword = "PYRAMIDS";
+            else keyword = "SKIP";
         }
         else if ( s_eqi ( text, "HEXAHEDRA" ) ||
                   s_eqi ( text, "HEXAHEDRONS" ) ) {
-            keyword = "HEXAHEDRONS";
+            if (mesh->dim == 3) keyword = "HEXAHEDRONS";
+            else keyword = "SKIP";
         }
         else if ( s_eqi ( text, "TRIANGLES" ) ) {
-            keyword = "SKIP";
+            if (mesh->dim == 2) keyword = "TRIANGLES";
+            else keyword = "SKIP";
         }
         else if ( s_eqi ( text, "QUADRILATERALS" ) ) {
-            keyword = "SKIP";
+            if (mesh->dim == 2) keyword = "QUADRILATERALS";
+            else keyword = "SKIP";
         }
         else if ( s_eqi ( text, "VERTICES" ) ) {
             keyword = "VERTICES";
@@ -242,6 +253,36 @@ void IO::load_mesh_medit(std::string filename) {
         //
         //  Presumably, numeric data to be processed by keyword.
         //
+        else if ( s_eqi ( keyword, "QUADRILATERALS" ) )
+        {
+            atoi ( text.c_str() ); //number of quad
+            keyword = "QUADRILATERAL_VERTEX";
+        }
+        else if ( s_eqi ( keyword, "QUADRILATERAL_VERTEX" ) )
+        {
+            element_ids.clear();
+            f.str(text);
+            for (int n=0; n<4; n++) {
+                f >> val;
+                element_ids.push_back(val);
+            }
+            mesh->add_element(element_ids);
+        }
+        else if ( s_eqi ( keyword, "TRIANGLES" ) )
+        {
+            atoi ( text.c_str() ); //number of triangle
+            keyword = "TRIANGLE_VERTEX";
+        }
+        else if ( s_eqi ( keyword, "TRIANGLE_VERTEX" ) )
+        {
+            element_ids.clear();
+            f.str(text);
+            for (int n=0; n<3; n++) {
+                f >> val;
+                element_ids.push_back(val);
+            }
+            mesh->add_element(element_ids);
+        }
         else if ( s_eqi ( keyword, "HEXAHEDRONS" ) ) {
             atoi ( text.c_str ( ) ); //number of hex
             keyword = "HEXAHEDRON_VERTEX";
@@ -300,8 +341,14 @@ void IO::load_mesh_medit(std::string filename) {
         }
         else if ( s_eqi ( keyword, "VERTEX_COORDINATE" ) ) {
             f.str(text);
-            f >> x >> y >> z;
-            mesh->add_vertice(x,y,z,vertice_id);
+            if (mesh->dim == 3) {
+                f >> x >> y >> z;
+                mesh->add_vertice(x,y,z,vertice_id);
+            } 
+            else {
+                f >> x >> y;
+                mesh->add_vertice(x,y,vertice_id);
+            }
             vertice_id++;
         }
         else if ( s_eqi ( keyword, "SKIP" ) ) {}
@@ -418,23 +465,28 @@ void IO::save_mesh_medit(std::string filename) {
     }
     out << "MeshVersionFormatted 2" << std::endl;
     out << std::endl;
-    out << "Dimension 3" << std::endl;
+    out << "Dimension " << mesh->dim << std::endl;
     out << std::endl;
     out << "# Created by OrthOpt: " << std::endl;
     out << "# The Mesh Orthogonality Optimizer" << std::endl;
     out << std::endl;
     //out elements
     unsigned int count;
-    for (int elem_type=4; elem_type<=8; elem_type++) {
+    int elem_types[6] = {-4, -3, 4, 5, 6, 8};
+    for (auto elem_type : elem_types) {
         //count elements
         count = 0;
         for (Element* elem : mesh->elements) {
-            if (elem->type == elem_type) {
-                count++;
-            }
+            if (elem->type == elem_type) count++;
         }
         if (count != 0) {
-            if (elem_type == 4) {
+            if (elem_type == -3) {
+                out << "Triangles" << std::endl;
+            }
+            else if (elem_type == -4) {
+                out << "Quadrilaterals" << std::endl;
+            }
+            else if (elem_type == 4) {
                 out << "Tetrahedra" << std::endl;
             }
             else if (elem_type == 5) {
@@ -467,7 +519,7 @@ void IO::save_mesh_medit(std::string filename) {
     for (Vertice* v : mesh->vertices) {
         out << v->coor->x << ' ';
         out << v->coor->y << ' ';
-        out << v->coor->z << ' ';
+        if (mesh->dim == 3) out << v->coor->z << ' ';
         out << "1" << std::endl;
     }
 
@@ -569,27 +621,43 @@ void IO::load_mesh_DAT_salome(std::string filename) {
         src >> id >> x >> y >> z;
         mesh->add_vertice(x,y,z,id);
     }
+    getline(src, line); //flush the rest of the previous line
     for (unsigned int i=0; i<n_e; i++) {
         getline(src, line);
         f.clear();
         f.str(line);
         f >> id >> code;
-        switch (code) {
-            case 304:
-                n_nodes = 4;
-                break;
-            case 305:
-                n_nodes = 5;
-                break;
-            case 306:
-                n_nodes = 6;
-                break;
-            case 308:
-                n_nodes = 8;
-                break;
-            default:
-                n_nodes = 0;
-                break;
+        if (mesh->dim == 2) {
+            switch (code) {
+                case 203:
+                    n_nodes = 3;
+                    break;
+                case 204:
+                    n_nodes = 4;
+                    break;
+                default:
+                    n_nodes = 0;
+                    break;
+            }
+        }
+        else {
+            switch (code) {
+                case 304:
+                    n_nodes = 4;
+                    break;
+                case 305:
+                    n_nodes = 5;
+                    break;
+                case 306:
+                    n_nodes = 6;
+                    break;
+                case 308:
+                    n_nodes = 8;
+                    break;
+                default:
+                    n_nodes = 0;
+                    break;
+            }
         }
         if (n_nodes) {
             std::vector<unsigned int> ids;
@@ -620,6 +688,8 @@ void IO::save_mesh_DAT_salome(std::string filename) {
     //elements
     for (Element* e : mesh->elements) {
         out << e->natural_id << ' ';
+        if (e->type == -3) out << 203;
+        if (e->type == -4) out << 204;
         if (e->type == 4) out << 304;
         if (e->type == 5) out << 305;
         if (e->type == 6) out << 306;

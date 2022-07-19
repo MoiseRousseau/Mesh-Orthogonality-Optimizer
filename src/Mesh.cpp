@@ -9,6 +9,7 @@
 #include <iomanip> //set precision
 
 void Mesh::decompose() {
+    std::cout << "Finding mesh internal faces (decompose)" << std::endl;
     std::map<std::array<unsigned int, 4>, Connection*> unique_id_map;
     std::vector<Connection*> temp_connection;
     
@@ -19,7 +20,18 @@ void Mesh::decompose() {
         }
     }
     for (Element* elem : elements) {
-        if (elem->type == 4) { //tetrahedron
+        if (elem->type == -3) { //triangle
+            build_connection(0,1,-1,-1, 2, elem, unique_id_map,
+                             temp_connection);
+            build_connection(1,2,-1,-1, 0, elem, unique_id_map,
+                             temp_connection);
+            build_connection(2,0,-1,-1, 1, elem, unique_id_map,
+                             temp_connection);
+        }
+        else if (elem->type == -4) { //quadrilateral
+        
+        }
+        else if (elem->type == 4) { //tetrahedron
             //face 0 1 2, opposite 3
             build_connection(0,1,2,-1, 3, elem, unique_id_map,
                              temp_connection);
@@ -55,6 +67,9 @@ void Mesh::decompose() {
         }
     }
     for (Connection* con : temp_connection) {
+#ifdef DEBUG_MODE
+        std::cout << *con << std::endl;
+#endif
         if (con->vertice_up == nullptr) {
             for (Vertice* v : con->vertices) {
                 v->fix_vertice();
@@ -79,17 +94,24 @@ void Mesh::build_connection(int i, int j, int k, int h, \
                             std::map<std::array<unsigned int,4>, Connection*> &unique_id_map,
                             std::vector<Connection*> &temp_connection) {
 
-    std::array<unsigned int, 4> key;
+    std::array<unsigned int, 4> key = {0,0,0,0};
     std::map<std::array<unsigned int, 4>, Connection*>::iterator it;
     Connection* con;
 
     //build key
     key[0] = elem->vertice_ids[i];
     key[1] = elem->vertice_ids[j];
-    key[2] = elem->vertice_ids[k];
-    if (h>0) {key[3] = elem->vertice_ids[h];}
-    else {key[3] = 0;}
+#ifdef DEBUG_MODE
+    for (auto x : key) std::cout << x << ' ';
+    std::cout << std::endl;
+#endif
+    if (k>0) key[2] = elem->vertice_ids[k]; //if 3D mesh
+    if (h>0) key[3] = elem->vertice_ids[h]; 
     std::sort(key.begin(),key.end());
+#ifdef DEBUG_MODE
+    for (auto x : key) std::cout << x << ' ';
+    std::cout << std::endl << std::endl;
+#endif
 
     //find connection in map
     it = unique_id_map.find(key);
@@ -104,9 +126,8 @@ void Mesh::build_connection(int i, int j, int k, int h, \
         con = new Connection();
         con->vertices.push_back(elem->vertices[i]);
         con->vertices.push_back(elem->vertices[j]);
-        con->vertices.push_back(elem->vertices[k]);
-        con->type = 3;
-        if (h>0) {con->vertices.push_back(elem->vertices[h]); con->type++;}
+        if (dim == 3) con->vertices.push_back(elem->vertices[k]);
+        if (h>0) con->vertices.push_back(elem->vertices[h]);
         con->element_id_dn = elem;
         con->vertice_dn = elem->vertices[opposite];
         unique_id_map[key] = con;
