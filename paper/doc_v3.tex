@@ -1,5 +1,5 @@
 \documentclass[11pt]{article}
-    \title{\textbf{Tetrahedral mesh orthogonality optimization for solving diffusive problem with finite volume solver}}
+    \title{\textbf{Variational mesh orthogonality improvement for finite volume solver of diffusive problem}}
     \author{Moie Rousseau}
     \date{}
     
@@ -107,51 +107,41 @@ The optimization was thus takled using a gradient-based approach to take advanta
 
 \subsection{Derivative of the objective function}
 
-Using gradient base algorithm to solve the optimization problem (\ref{eq:opt_problem}) require the knowlegde of the objective function derivative relative to each point $P_i$ of coordinates $(x_i,y_i,z_i)$, which can expressed as the sum of the derivative of each individual face error $d E_f / dP_i$:
+The variational remeshing was carried using a gradient-based algorithm which is effective for many dimensional problem. 
+This requires the knowlegde of the derivative of the objective function relative to each point $P_i$, which can be expanded as:
 %
 \begin{equation}
-\frac{dc}{dP_i} = \sum_{f \in faces} \frac{d E_f}{d P_i}
+\frac{dc}{dP_i} = \sum_{f \in faces} w_f E'_f\left( r_f^T \cdot n_f \right) \left(n_f^T \cdot \frac{d r_f}{dP_i}\ +\ r_f^T \cdot \frac{d n_f}{dP_i}\right)
+\label{eq:derivative_cost}
 \end{equation}
 %
-However, for a given mesh face $f$, if the two elements sharing the face $f$ do not contains the mesh point $P_i$, the derivative ${d E_f}{d P_i}$ will be null.
-In fact, there is only few cases when the derivative is non-null, which can be grouped into three configurations (Figure X):
+This expression requires the derivative of the unit face normal vector relative to the considered point $d n_f / dP_i$ and those of the unit cell center vector $d r_f / dP_i$.
+
+In fact, the contribution of many of the internal faces of the mesh to the total derivative of the cost function relative to a point $P_i$ is often null if the two elements sharing the face $f$ does not contains the mesh point $P_i$.
+In fact, there is only few cases which the normal or the cell-center derivative would be a-priori non-null, and can be grouped into two configurations (Figure X):
 \begin{itemize}
-\item the considered point is a face point (configuration $P_i = A$),
-\item the considered point belong to the element pointed by the face normal (configuration $P_i = F$),
-\item or the belong to the other element (configuration $P_i = E$).
+\item $P_i$ belong to one of the elements sharing the face (but not to the face).
+In this case only the cell-center derivative is non null (configuration I).
+\item $P_i$ is a face point and both normal and the cell-center derivative are non-null (configuration II),
 \end{itemize}
-%
-The derivative of individual face error $E_f$ according to a mesh vertices $P$ could be therefore be simplified to read:
-%
-\begin{equation}
-\frac{dE_f}{dP} = \sum_{f\in\ conf(P=A)} \frac{dE_f}{dA} + \sum_{f\in\ conf(P=E)} \frac{dE_f}{dE} +
-\sum_{f\in\ conf(P=F)} \frac{dE_f}{dF} 
-\end{equation}
-%
-where $f \in conf(P=X)$ states for the faces $f$ for which the point $P$ is in configuration $X$ (either $A$, $E$ or $F$, see Figure \ref{cases_figure}). 
-
-
-\subsection{Individual face error derivative}
-
-The general formula of the derivative of individual face error $E_f$ according to a mesh vertice $P_i$ is given by:
+Therefore, this allows to reexpress the derivative of the cost function relative to a mesh point $P_i$ as:
 %
 \begin{equation}
-\frac{dE_f}{dP_i} = E'_f\left( r_f^T \cdot n_f, w_f \right) \left(n_f^T \cdot \frac{d r_f}{dP_i}\ +\ r_f^T \cdot \frac{d n_f}{dP_i}\right)
-\label{general_derivative_expression}
+\begin{aligned}
+\frac{dc}{dP_i} = 
+&\sum_{\substack{f \in faces; \\ P_i\ \in \ conf(I)} } w_f E'_f\left( r_f^T \cdot n_f \right) n_f^T \cdot \left. \frac{d r_f}{dP_i}\right)_{I} \ + \\
+&\sum_{\substack{f \in faces; \\ P_i\ \in \ conf(II)} } w_f E'_f\left( r_f^T \cdot n_f \right) \left[n_f^T \cdot \left. \frac{d r_f}{dP_i}\right)_{II} +\ r_f^T \cdot \frac{d n_f}{dP_i}\right]
+\end{aligned}
+\label{eq:magic}
 \end{equation}
 %
-Where $E'_f$ is the weighting function derivative relative to its face orthogonality variable $(r_f^T \cdot n_f)$.
-The evaluation of individual face error derivative (equation \ref{general_derivative_expression}) required the derivative of the face normal vector relative to the considered point $d n_f / dP_i$ and those of the cell center vector $d r_f / dP_i$, which are unit vector whose coordinates does not depend trivially on the mesh point $P_i$.
-Expanding the unit vector derivative $du/dP_i$ to link it with its dimensional counterpart leads $dU/dP_i$ (see Annex A):
-%
-\begin{equation}
-\frac{du}{dP_i} = \frac{1}{N} \left[ \boldsymbol{I} - \frac{1}{N^2}\ U \otimes U^T \right] \frac{dU}{dP_i}
-\end{equation}
-%
-The previous formula to calculate the derivative of unit vector $n_f$ and $r_f$ relative to any mesh point $P_i$.
-The previous formula could therefore be used to calculate 
+Where the first terms represents the sum over the face which contains the point $P_i$ (configuration I) and the second the sum over the faces which $P_i$ belong to only one of the element shared by the face (configuration II).
+Also, derivative of the cell-center vector in the first configuration required information about both elements sharing the face, as moving the point $P_i$ will change both centers.
+In the second configuration however, only one center is changed, which allow to use a general expression of the derivative for polygons or polyhedra.
+The derivative have thus two distinct expression in each configuration.
 
-Expression of the derviative for 3D tetrahedral and 2D quad and triangular mesh are provided in annexe.
+In practice, equation \ref{eq:magic} allows to iterate on each internal face of the mesh, determining if the considered point is in one of the two configurations decribed above, and to calculate the corresponding contribution to the cost function derivative based on the derivative of the normal $n_f$ and/or the cell-center $r_f$ derivatives relative to $P_i$.
+Exporession of the both unit vector derivative in various face configurations (i.e. a triangle face shared by two tetrahedra, a segment between two triangles or between two general polygons) are presented in Annex A.
 
 
 \subsection{Numerical implementation}
@@ -166,6 +156,8 @@ Input, output and mesh decomposition are, for instance, done in serial.
 
 The constraint $r_f^T \cdot n_f \geq 0$ was imposed in the optimization by returning a NaN value when the dot product was negative, thus preventing the formation of inverted element.
 %TODO speed up on girhub
+
+Note there is different way to define the unit normal
 
 
 
@@ -219,12 +211,20 @@ Considering first the exponential weighting function, distribution of the face n
 
 \begin{figure}[h!]
   \centering
-  \includegraphics[width=0.99\textwidth]{simulation/sphere/mesh_compare/mesh_compare.pdf}
+  %\includegraphics[width=0.99\textwidth]{simulation/sphere/mesh_compare/mesh_compare.pdf}
   \label{orthogonality_distribution}
   \caption{Distribution of face non-orthogonality in the optimized meshes considering (a) an exponential weighting function, (b) a power weighting function and (c) an inverse function for various penalization power $n$. The black curve the reference, unoptimized mesh generated with the NETGEN algorithm.}
 \end{figure}
 
+\subsection{Variational quad mesh K-orthogonality improvement with anisotropic diffusion coefficient}
 
+Accuracy of the TPFA meth-od depends on the quality of the mesh which must be K-orthogonal, i.e., the permeability tensor product with each cell face normal should be aligned with the line defined by the two cell's center \cite{heinemann_modelling_1991}.
+
+The objective function could be modified to include the anisotropic diffusion coefficient and align the cell center vector with the product of the face normal and the diffusion coefficient interpolated at the face $K_f$:
+\begin{equation}
+c_{aniso}(P) = \sum_{f \in faces} w_f E_f \left( r_f^T \cdot K_f \cdot n_f \right)
+\end{equation}
+In this case, the unit normal vector $n_f$ could be replaced by $K_f \cdot n_f$ without loss of generality.
 
 \subsection{Comparing Numerical and Analytical Solutions}
 
@@ -245,25 +245,30 @@ For example, choosing $E_f$ as a power law function (i.e. $E_f=w_f (1-r_f^T\cdot
 At the opposite, a high penalization power (e.g. $n=5$) would preferentially decreases the non-orthogonality of internal faces with a high error.
 
 
-\subsection{Conductive and Diffusive Problems}
+\subsection{Comparison to other remeshing approach}
 
-Influence on mesh skewness
+Variational Centroïdal Voronoï Tesselation remesh \cite{levy}, search for equilateral triangle. 
+In our case, normal just need to be parallel to cell center vector, without additional constraint of the triangle shape.
+Quality could be ajusted using the error function.
+Further extension can deal with quadrilaterals and hexahedrons \cite{levy}.
+Our approach is not a mesher, as it does not create mesh element.
+
+Laplacing smoothing (can create inverted element).
+
 
 \subsection{Discussion}
 
 Cell of a prisms not considered. Tet and pyramid are optimized. Cell must be either hexa, pyr or tet.
 %TODO say we are optimizing point belonging to triangle, not quad, because of an additional equality constraint
 
-Anisotropy can't work.
-Unless grid are K orthogonal \cite{heinemann_modelling_1991}.
-However, no possible for tetrahedron
+Conductive and Diffusive Problems
 
+Anisotropy can't work for triangle and tetrahedron
 Conventional two-point flux approximation (TPFA) can only obtain the flux normal to the grid interface but completely neglects the one parallel to it \cite{}. MPFA needed. %https://ui.adsabs.harvard.edu/abs/2017AGUFM.H31D1541L/abstract
 
 Inverted element.
 
 Further work.
-2D case.
 Weighting factor as a function of the configuration.
 Include skewness error for gradient operator
 
@@ -281,9 +286,96 @@ TODO
 \clearpage
 
 
-\section*{Annex: Derivative of the objective function}
+\section*{Annexes}
 
-\subsection*{A. Unit vector derivative relative to a point}
+\subsection*{A. Expression of the unit vector derivative}
+
+\subsubsection*{A.1 Derivative of the unit normal (in two and three dimensions)}
+
+In two dimensions, the dimensional face normal $N_f$ of a segment $AB$ could be defined as $
+N_f = \begin{pmatrix} b_y - a_y  \\ a_x - b_x \end{pmatrix} $. 
+Chosing $A$ the point the derivative is relative with, the normal derivative is:
+\begin{equation}
+\frac{d N_f}{dA} = \begin{pmatrix}
+0 & -1 \\
+1 & 0
+\end{pmatrix} 
+\end{equation}
+
+In three dimensions, the dimensional face normal $N_f$ of a triangle face $ABC$ could be computed using the cross product of two of its edges, for example $AB$ and $BC$.
+Chosing $A$ the point over which the derivative is relative with, and $B$ and $C$ the two others triangle points taken in arbitrary order, the normal derivative is:
+%
+\begin{equation}
+\frac{d N_f}{dA} = \frac{d (B-A) \times (C-B)}{dA} = \begin{pmatrix}
+0 & (b_z-c_z) & (c_y-b_y) \\
+(c_z-b_z) & 0 & (b_x-c_x) \\
+(b_y-c_y) & (c_x-b_x) & 0
+\end{pmatrix} 
+\end{equation}
+
+Unit normal derivative term in equation (\ref{eq:magic}) is then deduced using the expression determined in Annex B:
+\begin{equation}
+r_f^T\cdot \frac{d n_f}{dA}\ = 
+ \frac{1}{\| N_f \|} \left[ r_f^T -  (r_f^T \cdot n_f)\ n_f^T \right] \frac{d N_f}{dA}
+ \label{deriv_n_f}
+\end{equation}
+%
+
+\subsubsection*{A.2 Derivative of the unit cell-center vector in configuration I (point belong to a mesh element but not to the face)}
+
+The general expression of the dimensional cell-center vector of a face $f$ is:
+\begin{equation}
+R_f = C_1 - C_2
+\end{equation}
+Where for example, $C_1$ is the center of the element pointed by the normal and $C_2$ the other element sharing the face.
+Centroïd $C$ of a $d=2$ dimensional triangle element or a $d=3$ dimensional tetrahedron and its derivative relative to one of the point $P_j$ read:
+\begin{equation}
+C = \frac{1}{d+1} \sum_{i=1}^{d+1} P_i  \quad ; \quad \frac{dC}{dP_j} = \frac{1}{d+1}\ \boldsymbol{I}
+\end{equation}
+Therefore, in configuration I where the point $P_j$ belong to only one triangular or tetrahedral element, the derivative of the cell center vector reads (see Annex B):
+\begin{equation}
+n_f^T \cdot \frac{d r_f}{d P_j} = \pm
+\frac{1}{(d+1) \| R_f \|} \left[ n_f^T -  (n_f^T \cdot r_f)\ r_f^T \right] 
+\end{equation}
+
+Generalizing in two dimension, the centroïd $C$ of a polygon defined by the $n$ points $P_0, ..., P_n$ of coordinate $P_i = (x_i, y_i$) can be determined using the following formula (with $P_{n+1} = P_0$ and $P_{-1} = P_n$):
+\begin{equation}
+\begin{aligned}
+C &= \frac{1}{6A_f} \begin{pmatrix}
+\sum_{i=1}^{n} (x_i + x_{i+1})\  (x_i y_{i+1} - x_{i+1} y_i) \\
+\sum_{i=1}^{n} (y_i + y_{i+1})\  (x_i y_{i+1} - x_{i+1} y_i)
+\end{pmatrix} \\
+A_f &= \frac{1}{2} \sum_{i=1}^{n}  (x_i y_{i+1} - x_{i+1} y_i) 
+\end{aligned}
+\end{equation}
+%
+Derivative of the polygon centroïd $C$ thus write:
+\begin{equation}
+\frac{dC}{dP_j} = \frac{1}{6A_f} \frac{d \Sigma}{d P_j} - \frac{1}{A_f} \left( C \otimes \frac{d A_f}{d P_j} \right)
+\end{equation}
+with $\Sigma = 6 A_f C$ and:
+\begin{subequations}
+\begin{align}
+\left. {d \Sigma}/{d P_j} \right)_{0,0} &= x_{j-1} (y_j - y_{j-1}) + 2x_j (y_{j+1} - y_{j-1}) + x_{j+1} (y_{j+1} - y_j)  \\
+\left. {d \Sigma}/{d P_j} \right)_{0,1} &= x_{j-1}^2 + x_j (x_{j-1} - x_{j+1}) + x_{j+1}^2  \\
+\left. {d \Sigma}/{d P_j} \right)_{1,0} &= - y_{j-1}^2 + y_j (y_{j+1} - y_{j-1}) + y_{j+1}^2  \\
+\left. {d \Sigma}/{d P_j} \right)_{1,1} &= y_{j-1} (x_{j} - x_{j+1}) + 2y_j (x_{j-1} - x_{j+1}) + y_{j+1} (x_{j-1} - x_j) \\
+\frac{d A_f}{d P_j} &= \frac{1}{2} \begin{pmatrix}
+y_{j+1} - y_{j-1} \\ x_{j-1} - x_{j+1}
+\end{pmatrix}^T
+\end{align}
+\end{subequations}
+%
+
+Centroïd of other element type in 3D was not investigated as only tetrahedral meshes were considered.
+
+\subsubsection*{A.3 Derivative of the unit cell-center vector in configuration II}
+
+TOdo
+
+
+\subsection*{B. Unit vector derivative relative to its dimensional counterpart}
+
 Starting from the definition of a unit vector $u$:
 \begin{equation}
 u = \frac{U}{N}
@@ -306,7 +398,11 @@ Replacing the above expression in those of the derivative of the unit vector $u$
 \begin{equation}
 \frac{du}{dX} = \frac{1}{N} \left[ \boldsymbol{I} - u \otimes u^T \right] \frac{dU}{dX} = \frac{1}{N} \left[ \boldsymbol{I} - \frac{1}{N^2}\ U \otimes U^T \right] \frac{dU}{dX}
 \end{equation}
-With $\boldsymbol{I}$ the unit 3x3 diagonal matrix.
+With $\boldsymbol{I}$ the unit diagonal matrix.
+Multiplying the previous expression by a random line vector $v^T$ (as in equation \ref{eq:derivative_cost}), after distributing and rearranging parentesis near the dyadic product, simplified to:
+\begin{equation}
+v^T \frac{du}{dX} = \frac{1}{N} \left[ v^T - (v^T \cdot u)\ u^T \right] \frac{dU}{dX} 
+\end{equation}
 
 
 \subsection*{B. Expressions of cell center vectors and their derivative}
