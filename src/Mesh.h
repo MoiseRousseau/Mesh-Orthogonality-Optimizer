@@ -5,7 +5,6 @@
 #include <map>
 #include <array>
 #include "Connection.h"
-#include "Point.h"
 #include "Element.h"
 #include "Vertice.h"
 

@@ -195,8 +195,8 @@ void Mesh::save_face_detailed_informations(std::string f_out) {
         for (Vertice* v: con->vertices) {out << v->natural_id << " ";}
         if (con->vertices.size() == 3) {out << "-1 ";}
         out << con->area << " ";
-        out << con->normal.x << " " << con->normal.y << " " << con->normal.z << " ";
-        out << con->cell_center_vector.x << " " << con->cell_center_vector.y << " " << con->cell_center_vector.z << " ";
+        for (size_t i=0; i<dim; i++) out << (con->normal)[i] << " ";
+        for (size_t i=0; i<dim; i++) out << (con->cell_center_vector)[i] << " ";
         con->compute_orthogonality();
         
         out << 1-con->orthogonality << " " << std::endl;

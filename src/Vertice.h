@@ -1,29 +1,29 @@
 #ifndef VERTICE_H
 #define VERTICE_H
 
-#include "Point.h"
+#include <Eigen/Core>
 
 class Vertice
 {
     public:
-        Point* coor;
+        Eigen::Vector3d* coor;
         unsigned int natural_id;
         bool fixed = false;
         
         Vertice(double x, double y) {
-            coor = new Point(x,y,0.);
+            coor = new Eigen::Vector3d(x,y,0.);
             natural_id = -1;
         };
         Vertice(double x, double y, unsigned int id) {
-            coor = new Point(x,y,0.);
+            coor = new Eigen::Vector3d(x,y,0.);
             natural_id = id;
         };
         Vertice(double x, double y, double z) {
-            coor = new Point(x,y,z);
+            coor = new Eigen::Vector3d(x,y,z);
             natural_id = -1;
         };
         Vertice(double x, double y, double z, unsigned int id) {
-            coor = new Point(x,y,z);
+            coor = new Eigen::Vector3d(x,y,z);
             natural_id = id;
         };
         virtual ~Vertice () {};

@@ -6,7 +6,6 @@
 #include "Connection.h"
 #include "Mesh.h"
 #include "OrthOpt.h"
-#include "Point.h"
 #include "IO.h"
 #include "Error_Functions.h"
 
@@ -74,9 +73,9 @@ class Wrapper_for_LBFGS
             unsigned int index=0;
             for (Vertice* v : opt->mesh->vertices) {
                 if (v->fixed == false) {
-                    x[index] = v->coor->x;
-                    x[index+1] = v->coor->y;
-                    if (opt->mesh->dim != 2) x[index+2] = v->coor->z;
+                    for (size_t i=0; i<opt->mesh->dim; i++) {
+                        x[index+i] = (*(v->coor))[i];
+                    }
                     index += opt->mesh->dim;
                 }
             }

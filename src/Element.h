@@ -2,6 +2,7 @@
 #define ELEMENT_H
 
 #include "Vertice.h"
+#include <Eigen/Core>
 
 
 class Element
@@ -19,8 +20,8 @@ class Element
         };
         virtual ~Element() {};
 
-        Point center() {
-            Point center(0., 0., 0.);
+        Eigen::Vector3d center() {
+            Eigen::Vector3d center(0., 0., 0.);
             if (type == -3 or type == 4) { 
                 //tet or triangle, center = mean of coordinate
                 for (auto p = vertices.begin(); p != vertices.end(); p++) {
@@ -30,16 +31,16 @@ class Element
             }
             else if (type <= -4) { //other polygon including quad
                 //WARNING, polygon vertices must be ordered and define the polygon segment
-                Point* vi = nullptr; 
-                Point *vip = nullptr;
+                Eigen::Vector3d* vi = nullptr; 
+                Eigen::Vector3d *vip = nullptr;
                 double temp, area = 0.;
                 for (size_t i=0; i!=vertices.size(); i++) {
                     vi = vertices[i]->coor; 
                     if (i+1 == vertices.size()) vip = vertices[0]->coor;
                     else vip = vertices[i+1]->coor;
-                    temp = (vi->x*vip->y - vip->x*vi->y);
-                    center.x += (vi->x + vip->x)*temp;
-                    center.y += (vi->y + vip->y)*temp;
+                    temp = (*vi)[0] * (*vip)[1] - (*vip)[0] * (*vi)[1] ;
+                    center[0] += ( (*vi)[0] + (*vip)[0]) * temp;
+                    center[1] += ((*vi)[1] + (*vip)[1])*temp;
                     area += temp;
                 }
                 center /= 6*area;

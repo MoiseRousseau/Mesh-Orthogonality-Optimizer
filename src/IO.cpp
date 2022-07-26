@@ -87,9 +87,9 @@ void IO::save_vertices_xyz(std::string filename) {
     src << std::scientific;
     src << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
-        src << v->coor->x << ' ';
-        src << v->coor->y << ' ';
-        src << v->coor->z << std::endl;
+        src << (*(v->coor))[0] << ' ';
+        src << (*(v->coor))[1] << ' ';
+        src << (*(v->coor))[2] << std::endl;
     }
     src.close();
 }
@@ -132,9 +132,9 @@ void IO::save_vertices_tetgen(std::string filename) {
         src << count << ' ';
         src << std::scientific;
         src << std::setprecision(8);
-        src << v->coor->x << ' ';
-        src << v->coor->y << ' ';
-        src << v->coor->z << std::endl;
+        src << (*(v->coor))[0] << ' ';
+        src << (*(v->coor))[1] << ' ';
+        src << (*(v->coor))[2] << std::endl;
         count++;
     }
     src.close();
@@ -517,9 +517,7 @@ void IO::save_mesh_medit(std::string filename) {
     out << std::scientific;
     out << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
-        out << v->coor->x << ' ';
-        out << v->coor->y << ' ';
-        if (mesh->dim == 3) out << v->coor->z << ' ';
+        for (size_t i=0; i<mesh->dim; i++) out << (*(v->coor))[i] << ' ';
         out << "1" << std::endl;
     }
 
@@ -602,23 +600,25 @@ void IO::save_mesh_PFLOTRAN(std::string filename) {
     out << std::scientific;
     out << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
-        out << v->coor->x << ' ';
-        out << v->coor->y << ' ';
-        out << v->coor->z << std::endl;
+        out << (*(v->coor))[0] << ' ';
+        out << (*(v->coor))[1] << ' ';
+        out << (*(v->coor))[2] << std::endl;
     }
     out.close();
 }
 
 void IO::load_mesh_DAT_salome(std::string filename) {
+    //Note: in 2D, only X and Y coordinate are read
     std::ifstream src(filename);
     unsigned int n_v, n_e;
     unsigned int id, code, n_nodes, id_node;
-    double x, y, z;
+    double x=0., y=0., z=0.;
     std::istringstream f;
     std::string line;
     src >> n_v >> n_e;
     for (unsigned int i=0; i<n_v; i++) {
-        src >> id >> x >> y >> z;
+        if (mesh->dim == 2) src >> id >> x >> y;
+        else src >> id >> x >> y >> z;
         mesh->add_vertice(x,y,z,id);
     }
     getline(src, line); //flush the rest of the previous line
@@ -680,9 +680,9 @@ void IO::save_mesh_DAT_salome(std::string filename) {
     out << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
         out << v->natural_id << ' ';
-        out << v->coor->x << ' ';
-        out << v->coor->y << ' ';
-        out << v->coor->z << std::endl;
+        out << (*(v->coor))[0] << ' ';
+        out << (*(v->coor))[1] << ' ';
+        out << (*(v->coor))[2] << std::endl;
     }
     out.close();
     //elements

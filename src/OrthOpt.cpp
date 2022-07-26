@@ -7,7 +7,6 @@
 #include <omp.h>
 
 #include "Mesh.h"
-#include "Point.h"
 #include "Connection.h"
 #include <Eigen/Core>
 
@@ -31,7 +30,7 @@ void OrthOpt::computeCostDerivative(Eigen::VectorXd& grad)
     computeCostFunction(); //update normal, cell center vector and other
     unsigned int index;
     double prefactor;
-    Point deriv;
+    Eigen::Vector3d deriv;
     Connection* con;
     for (size_t i=0; i!=grad.size(); i++) {
         grad[i] = 0;
@@ -52,33 +51,27 @@ void OrthOpt::computeCostDerivative(Eigen::VectorXd& grad)
                 if (p->fixed) {continue;}
                 index = mesh->dim * derivative_vertice_ids[p->natural_id-1];
                 deriv = derivative_A_position(con, p) * prefactor;
-                #pragma omp atomic update
-                grad[index] += deriv.x;
-                #pragma omp atomic update
-                grad[index+1] += deriv.y;
-                #pragma omp atomic update
-                grad[index+2] += deriv.z;
+                for (size_t i=0; i<mesh->dim; i++) {
+                    #pragma omp atomic update
+                    grad[index+i] += deriv[i];
+                }
             }
             deriv = derivative_E_position(con) * prefactor;
             //E position
             if (con->vertice_dn->fixed == false) {
                 index = mesh->dim * derivative_vertice_ids[con->vertice_dn->natural_id-1];
-                #pragma omp atomic update
-                grad[index] -= deriv.x;
-                #pragma omp atomic update
-                grad[index+1] -= deriv.y;
-                #pragma omp atomic update
-                grad[index+2] -= deriv.z;
+                for (size_t i=0; i<mesh->dim; i++) {
+                    #pragma omp atomic update
+                    grad[index+i] += deriv[i];
+                }
             }
             //F position
             if (con->vertice_up->fixed == false) {
                 index = mesh->dim * derivative_vertice_ids[con->vertice_up->natural_id-1];
-                #pragma omp atomic update
-                grad[index] += deriv.x;
-                #pragma omp atomic update
-                grad[index+1] += deriv.y;
-                #pragma omp atomic update
-                grad[index+2] += deriv.z;
+                for (size_t i=0; i<mesh->dim; i++) {
+                    #pragma omp atomic update
+                    grad[index+i] += deriv[i];
+                }
             }
         }
         else if (con->element_id_dn->type + con->element_id_up->type == 10 and
@@ -100,9 +93,9 @@ void OrthOpt::update_vertices_position(const Eigen::VectorXd &x) {
     for (Vertice* v : mesh->vertices) {
         if (v->fixed == false) {
             //vertice is not fixed, update position
-            v->coor->x = x[index];
-            v->coor->y = x[index+1];
-            if (mesh->dim == 3) v->coor->z = x[index+2];
+            for (size_t i=0; i<mesh->dim; i++) {
+                (*(v->coor))[i] += x[index];
+            }
             index += mesh->dim;
         }
     }

@@ -3,7 +3,6 @@
 
 #include <array>
 #include "Mesh.h"
-#include "Point.h"
 #include "Connection.h"
 #include "Error_Functions.h"
 #include <Eigen/Core>
@@ -105,12 +104,12 @@ class OrthOpt
     protected:
 
     private:
-        Point derivative_E_position(Connection* con) {
+        Eigen::Vector3d derivative_E_position(Connection* con) {
             return ((con->normal - con->cell_center_vector * (con->orthogonality)) \
                     / con->cell_center_vector_norm * 0.25);
         }
 
-        Point derivative_A_position(Connection* con, Vertice* A) {
+        Eigen::Vector3d derivative_A_position(Connection* con, Vertice* A) {
             //determine B and C point in various cases
             Vertice* B = nullptr;
             Vertice* C = nullptr;

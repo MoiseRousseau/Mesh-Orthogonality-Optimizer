@@ -17,6 +17,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ftree-vectorize -ffast-math")
 include_directories(src)
 add_executable (OrthOpt 
     src/main.cpp
+    src/Connection.cpp
     src/Mesh.cpp
     src/OrthOpt.cpp
     src/IO.cpp
