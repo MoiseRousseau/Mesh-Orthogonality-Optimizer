@@ -177,6 +177,7 @@ void print_program_information() {
     cout << " #        By: Moise Rousseau (2022)        #" << endl;
     cout << " #                                         #" << endl;
     cout << " ###########################################" << endl;
+    cout << endl << "Publication DOI: TODO" << endl;
     cout << endl;
 }
 
@@ -195,6 +196,7 @@ non-orthogonality and skewness)"  << endl;
     cout << "\t-m <path to mesh file (Medit / Salome DAT / PFLOTRAN)>" << endl;
     cout << "\t-fixed <path to fixed vertices id> (optional)" << endl;
     cout << "\t-dimension <2/3> (Mesh dimension, default 3 if not specified in mesh format, e.g. Medit)" << endl;
+    cout << "\t-anisotropic_diff_coef <path to file> (Optimize a 2D considering a anisotropic and heterogeneous diffusion coefficient to respect the K-orthogonality condition, optional)" << endl;
     cout << endl;
     cout << "Optimized vertices position output (xyz format):" << endl;
     cout << "\t-o <output file> (Default \"out.xyz\", output format deduced from extension)" << endl;
@@ -240,6 +242,7 @@ int main(int argc, char* argv[]) {
     std::string f_mesh = ""; //general mesh (medit / ...)
     std::string f_fixed = ""; //path to fixed point in the mesh
     std::string f_output = "out.xyz"; //output name
+    std::string f_aniso = ""; //anisotropic diffusion coefficient file
     double penalizing_power = 1.;
     int mode = 0; //0=optimize, 1=scan
     int function_type = 0;
@@ -283,6 +286,9 @@ int main(int argc, char* argv[]) {
         }
         else if (!strcmp(arg, "-dimension")) {
             iarg++; dim = atoi(argv[iarg]);
+        }
+        else if (!strcmp(arg, "-anisotropic_diff_coef")) {
+            iarg++; f_aniso = argv[iarg];
         }
         // OUTPUT //
         else if (!strcmp(arg, "-o")) {
@@ -388,6 +394,25 @@ int main(int argc, char* argv[]) {
         std::ifstream src_fixed(f_fixed);
         while (src_fixed >> id_fixed) {
             ids_fixed.push_back(id_fixed);
+        }
+        src_fixed.close();
+    }
+    // get anisotropic coefficient
+    // Kx Ky Kxy per line, 1 line per element
+    std::vector<double> aniso_coeff;
+    double Kx, Ky, Kxy;
+    size_t count = 0;
+    if (f_aniso.size() != 0) {
+        std::ifstream src_fixed(f_fixed);
+        while (src_fixed >> Kx >> Ky >> Kxy) {
+            aniso_coeff.push_back(Kx);
+            aniso_coeff.push_back(Ky);
+            aniso_coeff.push_back(Kxy);
+            count++;
+        }
+        if (count != mesh.elements.size()) {
+            cout << "Number of diffusion coefficient does not match number of element in the mesh. You should define three diffusion coefficient components (Kx, Ky, Kxy) for each element." << endl; 
+            exit(1);
         }
         src_fixed.close();
     }

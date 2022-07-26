@@ -29,7 +29,8 @@ void Mesh::decompose() {
                              temp_connection);
         }
         else if (elem->type == -4) { //quadrilateral
-        
+            build_connection(0,1,-1,-1, 2, elem, unique_id_map,
+                             temp_connection);
         }
         else if (elem->type == 4) { //tetrahedron
             //face 0 1 2, opposite 3
@@ -70,7 +71,7 @@ void Mesh::decompose() {
 #ifdef DEBUG_MODE
         std::cout << *con << std::endl;
 #endif
-        if (con->vertice_up == nullptr) {
+        if (con->element_id_up == nullptr) {
             for (Vertice* v : con->vertices) {
                 v->fix_vertice();
             }
@@ -118,7 +119,7 @@ void Mesh::build_connection(int i, int j, int k, int h, \
     if (it != unique_id_map.end()) { //key already in
         //terminate connection connection
         it->second->element_id_up = elem;
-        it->second->vertice_up = elem->vertices[opposite];
+        //it->second->vertice_up = elem->vertices[opposite];
         it->second->check_orientation();
         unique_id_map.erase(it);
     }
@@ -129,7 +130,7 @@ void Mesh::build_connection(int i, int j, int k, int h, \
         if (dim == 3) con->vertices.push_back(elem->vertices[k]);
         if (h>0) con->vertices.push_back(elem->vertices[h]);
         con->element_id_dn = elem;
-        con->vertice_dn = elem->vertices[opposite];
+        //con->vertice_dn = elem->vertices[opposite];
         unique_id_map[key] = con;
         temp_connection.push_back(con);
     }
