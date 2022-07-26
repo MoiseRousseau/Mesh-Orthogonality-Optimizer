@@ -65,7 +65,10 @@ class Mesh
         }
         void add_element(std::vector<unsigned int> ids) {
             n_elements += 1;
-            Element* elem = new Element();
+            Element* elem;
+            if (ids.size() == 3) elem = new Tri_Element();
+            else if (dim == 2) elem = new Polygon_Element();
+            else elem = new Tet_Element();
             for (auto id = ids.begin(); id != ids.end(); id++) {
                 elem->vertice_ids.push_back(*id);
             }
