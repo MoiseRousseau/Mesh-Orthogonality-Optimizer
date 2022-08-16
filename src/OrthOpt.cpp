@@ -10,8 +10,7 @@
 #include "Connection.h"
 #include <Eigen/Core>
 
-typedef std::array<unsigned int, 3> face_id;
-typedef std::map<face_id, Connection> map_faces;
+//typedef std::array<unsigned int, 3> face_id;
 
 
 void OrthOpt::computeCostFunction() {
@@ -94,7 +93,7 @@ void OrthOpt::update_vertices_position(const Eigen::VectorXd &x) {
         if (v->fixed == false) {
             //vertice is not fixed, update position
             for (size_t i=0; i<mesh->dim; i++) {
-                (*(v->coor))[i] += x[index];
+                (*(v->coor))[i] = x[index+i];
             }
             index += mesh->dim;
         }
