@@ -121,6 +121,8 @@ void Mesh::build_connection(int i, int j, int k, int h, \
         it->second->element_id_up = elem;
         //it->second->vertice_up = elem->vertices[opposite];
         it->second->check_orientation();
+        it->second->normal.resize(dim);
+        it->second->cell_center_vector.resize(dim);
         unique_id_map.erase(it);
     }
     else {

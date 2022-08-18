@@ -6,24 +6,26 @@
 class Vertice
 {
     public:
-        Eigen::Vector3d* coor;
-        unsigned int natural_id;
+        Eigen::VectorXd* coor;
+        unsigned int natural_id=-1;
         bool fixed = false;
         
         Vertice(double x, double y) {
-            coor = new Eigen::Vector3d(x,y,0.);
-            natural_id = -1;
+            coor = new Eigen::VectorXd;
+            coor->resize(2);
+            *coor << x,y;
         };
         Vertice(double x, double y, unsigned int id) {
-            coor = new Eigen::Vector3d(x,y,0.);
+            Vertice(x,y);
             natural_id = id;
         };
         Vertice(double x, double y, double z) {
-            coor = new Eigen::Vector3d(x,y,z);
-            natural_id = -1;
+            coor = new Eigen::VectorXd;
+            coor->resize(3);
+            *coor << x,y,z;
         };
         Vertice(double x, double y, double z, unsigned int id) {
-            coor = new Eigen::Vector3d(x,y,z);
+            Vertice(x,y,z);
             natural_id = id;
         };
         virtual ~Vertice () {};

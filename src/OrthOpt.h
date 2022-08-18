@@ -130,14 +130,14 @@ class OrthOpt
             }
             else {B = con->vertices[0]; C = con->vertices[1];}
             //compute normal derivative
+            Eigen::Vector3d temp, BC;
+            temp = con->cell_center_vector - con->orthogonality*con->normal;
+            BC = *(C->coor)-*(B->coor);
+            temp = temp.cross(BC) / con->area;
             if (con->vertices.size() == 3) { //face is a triangle
-                return ((con->cell_center_vector - con->normal*(con->orthogonality)).cross( \
-                        *(C->coor)-*(B->coor)) / (2*con->area));
+                return 0.5*temp;
             }
-            else {
-                return ((con->cell_center_vector - con->normal*(con->orthogonality)).cross( \
-                        *(C->coor)-*(B->coor)) / (con->area));
-            }
+            else return temp;
         }
 };
 

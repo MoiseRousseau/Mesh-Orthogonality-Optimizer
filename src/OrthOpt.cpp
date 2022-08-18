@@ -47,7 +47,7 @@ void OrthOpt::computeCostDerivative(Eigen::VectorXd& grad)
             deriv = derivative_A_position(con, p);
             if (con->element_id_dn->type + con->element_id_up->type != 8 or
                 con->element_id_dn->type + con->element_id_up->type != -6) {
-                deriv += temp * (con->element_id_up->center_derivative(p) - con->element_id_dn->center_derivative(p) )
+                deriv += temp * (con->element_id_up->center_derivative(p) - con->element_id_dn->center_derivative(p) );
             }
             index = mesh->dim * derivative_vertice_ids[p->natural_id-1];
             for (size_t i=0; i<mesh->dim; i++) {
@@ -58,10 +58,8 @@ void OrthOpt::computeCostDerivative(Eigen::VectorXd& grad)
         // add contribution of vertices of element dn
         for (Vertice* p : con->element_id_dn->vertices) {
             if (p->fixed) {continue;}
-            if (con->vertices->contains(p)) {
-                continue; //already treated
-            }
-            deriv = temp * con->element_id_up->center_derivative(p));
+            //if (con->vertices.find(p)) continue; //already treated
+            deriv = temp * con->element_id_up->center_derivative(p);
             index = mesh->dim * derivative_vertice_ids[p->natural_id-1];
             for (size_t i=0; i<mesh->dim; i++) {
                 #pragma omp atomic update
@@ -71,10 +69,8 @@ void OrthOpt::computeCostDerivative(Eigen::VectorXd& grad)
         // add contribution of vertices of element up
         for (Vertice* p : con->element_id_up->vertices) { 
             if (p->fixed) {continue;}
-            if (con->vertices->contains(p)) {
-                continue; //already treated
-            }
-            deriv = temp * con->element_id_up->center_derivative(p));
+            //if (con->vertices->contains(p)) continue; //already treated
+            deriv = temp * con->element_id_up->center_derivative(p);
             index = mesh->dim * derivative_vertice_ids[p->natural_id-1];
             for (size_t i=0; i<mesh->dim; i++) {
                 #pragma omp atomic update

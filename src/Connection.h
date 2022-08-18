@@ -17,8 +17,8 @@ class Connection
         //std::vector<Vertice*> vertice_up = nullptr;
         //std::vector<>Vertice* vertice_dn = nullptr;
         double area = -1; //face area
-        Eigen::Vector3d normal; //face normal, norm = area, or length in 2D
-        Eigen::Vector3d cell_center_vector;  //vector linking the two cell center
+        Eigen::VectorXd normal; //face normal, norm = area, or length in 2D
+        Eigen::VectorXd cell_center_vector;  //vector linking the two cell center
         double cell_center_vector_norm = 0.; // and its norm
         double orthogonality = -1; //(r_f*n_f), 1 mean no error, 0 full error
         //double skewness = -1;

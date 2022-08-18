@@ -8,9 +8,9 @@ void Connection::check_orientation() {
         auto temp = element_id_up;
         element_id_up = element_id_dn;
         element_id_dn = temp;
-        auto temp2 = vertice_up;
-        vertice_up = vertice_dn;
-        vertice_dn = temp2;
+        //auto temp2 = vertice_up;
+        //vertice_up = vertice_dn;
+        //vertice_dn = temp2;
         orthogonality = -orthogonality;
     }
 }
@@ -42,6 +42,7 @@ void Connection::compute_normal() {
         Eigen::Vector3d u = *vertices[1]->coor-*vertices[0]->coor;
         Eigen::Vector3d v = *vertices[2]->coor-*vertices[1]->coor;
         normal = u.cross(v);
+        //normal << u[1]*v[2]-u[2]*v[1], u[0]*v[2]-u[2]*v[0], u[0]*v[1]-u[1]*v[0];
         area = normal.norm();
         normal /= area;
         area /= 2;
