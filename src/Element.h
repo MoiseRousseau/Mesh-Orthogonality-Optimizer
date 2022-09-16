@@ -29,9 +29,8 @@ class Tri_Element : public Element
         Tri_Element() {
             type = -3;
         }
-        Eigen::VectorXd Center() {
+        Eigen::VectorXd center() {
             Eigen::Vector2d center(0., 0.);
-            center.resize(2);
             for (auto p = vertices.begin(); p != vertices.end(); p++) {
                 center += *((*p)->coor);
             }
@@ -53,7 +52,7 @@ class Tet_Element : public Element
             type = 4;
         }
         
-        Eigen::VectorXd Center() {
+        Eigen::VectorXd center() {
             Eigen::Vector3d center(0., 0., 0.);
             for (auto p = vertices.begin(); p != vertices.end(); p++) {
                 center += *((*p)->coor);
@@ -77,10 +76,10 @@ class Polygon_Element : public Element
             type = -4;
         }
         
-        Eigen::VectorXd Center() {
+        Eigen::VectorXd center() {
             Eigen::Vector2d center(0., 0.);
             //WARNING, polygon vertices must be ordered and define the polygon segment
-            Eigen::VectorXd* vi = nullptr; 
+            Eigen::VectorXd *vi = nullptr; 
             Eigen::VectorXd *vip = nullptr;
             double temp, area = 0.;
             for (size_t i=0; i!=vertices.size(); i++) {
@@ -99,9 +98,7 @@ class Polygon_Element : public Element
         Eigen::MatrixXd center_derivative(Vertice* p) {
             Eigen::Matrix2d derivative;
             //calculate center and area
-            Eigen::VectorXd center;
-            center.resize(2);
-            center << 0., 0.;
+            Eigen::Vector2d center(0., 0.);
             Eigen::VectorXd *vi = nullptr; 
             Eigen::VectorXd *vip = nullptr;
             double temp, area = 0.;

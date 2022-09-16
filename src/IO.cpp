@@ -87,9 +87,9 @@ void IO::save_vertices_xyz(std::string filename) {
     src << std::scientific;
     src << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
-        src << (*(v->coor))[0] << ' ';
-        src << (*(v->coor))[1] << ' ';
-        src << (*(v->coor))[2] << std::endl;
+        src << (v->coor)[0] << ' ';
+        src << (v->coor)[1] << ' ';
+        src << (v->coor)[2] << std::endl;
     }
     src.close();
 }
@@ -132,9 +132,9 @@ void IO::save_vertices_tetgen(std::string filename) {
         src << count << ' ';
         src << std::scientific;
         src << std::setprecision(8);
-        src << (*(v->coor))[0] << ' ';
-        src << (*(v->coor))[1] << ' ';
-        src << (*(v->coor))[2] << std::endl;
+        src << (v->coor)[0] << ' ';
+        src << (v->coor)[1] << ' ';
+        src << (v->coor)[2] << std::endl;
         count++;
     }
     src.close();
@@ -517,7 +517,7 @@ void IO::save_mesh_medit(std::string filename) {
     out << std::scientific;
     out << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
-        for (size_t i=0; i<mesh->dim; i++) out << (*(v->coor))[i] << ' ';
+        for (size_t i=0; i<mesh->dim; i++) out << (v->coor)[i] << ' ';
         out << "1" << std::endl;
     }
 
@@ -600,9 +600,9 @@ void IO::save_mesh_PFLOTRAN(std::string filename) {
     out << std::scientific;
     out << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
-        out << (*(v->coor))[0] << ' ';
-        out << (*(v->coor))[1] << ' ';
-        out << (*(v->coor))[2] << std::endl;
+        out << (v->coor)[0] << ' ';
+        out << (v->coor)[1] << ' ';
+        out << (v->coor)[2] << std::endl;
     }
     out.close();
 }
@@ -680,9 +680,9 @@ void IO::save_mesh_DAT_salome(std::string filename) {
     out << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
         out << v->natural_id << ' ';
-        out << (*(v->coor))[0] << ' ';
-        out << (*(v->coor))[1] << ' ';
-        out << (*(v->coor))[2] << std::endl;
+        out << (v->coor)[0] << ' ';
+        out << (v->coor)[1] << ' ';
+        out << (v->coor)[2] << std::endl;
     }
     out.close();
     //elements

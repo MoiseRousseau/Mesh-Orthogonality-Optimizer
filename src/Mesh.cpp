@@ -120,9 +120,9 @@ void Mesh::build_connection(int i, int j, int k, int h, \
         //terminate connection connection
         it->second->element_id_up = elem;
         //it->second->vertice_up = elem->vertices[opposite];
+        it->second->normal = Eigen::VectorXd::Zero(dim);
+        it->second->cell_center_vector = Eigen::VectorXd::Zero(dim);
         it->second->check_orientation();
-        it->second->normal.resize(dim);
-        it->second->cell_center_vector.resize(dim);
         unique_id_map.erase(it);
     }
     else {
