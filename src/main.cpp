@@ -361,7 +361,7 @@ int main(int argc, char* argv[]) {
          return 1;
     }
     
-    if ((function_type < 0) or (function_type) > 3) {
+    if ((function_type < 0) or (function_type) > 4) {
         cerr << "Error! function type not recognized: " << function_type << endl;
         return 1;
     }
