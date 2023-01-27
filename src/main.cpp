@@ -68,7 +68,7 @@ class Wrapper_for_LBFGS
             
             //std::ostringstream f_out;
             //f_out << "derivative_it" << iteration << ".dat";
-#ifdef DEBUG
+#ifdef DEBUG_MODE
             std::cout << "Analytic gradient:" << std::endl;
             std::cout << grad << std::endl;
             std::cout << "FD gradient:" << std::endl;

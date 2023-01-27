@@ -77,6 +77,12 @@ void Mesh::decompose() {
             }
             boundary_connections.push_back(con);
         }
+        else if (con->element_id_up->zone != con->element_id_dn->zone) {
+            for (Vertice* v : con->vertices) {
+                v->fix_vertice();
+            }
+            connections_internal.push_back(con);
+        }
         else {
             connections_internal.push_back(con);
         }

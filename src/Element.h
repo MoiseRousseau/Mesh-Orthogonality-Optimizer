@@ -13,6 +13,7 @@ class Element
         std::vector<unsigned int> vertice_ids; //TODO: not needed, already in Vertices*
         int type; //4 = tet, 5 = pyr, 6 = prisms, 8 = hex, -3 triangle, -4 = quad
         std::vector<Vertice*> vertices;
+        int zone = 0; //material
 
         Element() {};
         virtual ~Element() {};

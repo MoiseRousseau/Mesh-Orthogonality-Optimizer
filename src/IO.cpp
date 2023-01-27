@@ -260,12 +260,13 @@ void IO::load_mesh_medit(std::string filename) {
         else if ( s_eqi ( keyword, "QUADRILATERAL_VERTEX" ) )
         {
             element_ids.clear();
-            f.str(text);
+            f.clear(); f.str(text);
             for (int n=0; n<4; n++) {
                 f >> val;
                 element_ids.push_back(val);
             }
-            mesh->add_element(element_ids);
+            Element* elem = mesh->add_element(element_ids);
+            f >> elem->zone;
         }
         else if ( s_eqi ( keyword, "TRIANGLES" ) )
         {
@@ -275,12 +276,13 @@ void IO::load_mesh_medit(std::string filename) {
         else if ( s_eqi ( keyword, "TRIANGLE_VERTEX" ) )
         {
             element_ids.clear();
-            f.str(text);
+            f.clear(); f.str(text);
             for (int n=0; n<3; n++) {
                 f >> val;
                 element_ids.push_back(val);
             }
-            mesh->add_element(element_ids);
+            Element* elem = mesh->add_element(element_ids);
+            f >> elem->zone;
         }
         else if ( s_eqi ( keyword, "HEXAHEDRONS" ) ) {
             atoi ( text.c_str ( ) ); //number of hex
@@ -288,12 +290,13 @@ void IO::load_mesh_medit(std::string filename) {
         }
         else if ( s_eqi ( keyword, "HEXAHEDRON_VERTEX" ) ) {
             element_ids.clear();
-            f.str(text);
+            f.clear(); f.str(text);
             for (int n=0; n<8; n++) {
                 f >> val;
                 element_ids.push_back(val);
             }
-            mesh->add_element(element_ids);
+            Element* elem = mesh->add_element(element_ids);
+            f >> elem->zone;
         }
         else if ( s_eqi ( keyword, "TETRAHEDRONS" ) ) {
             atoi ( text.c_str ( ) ); //number of tet
@@ -301,12 +304,13 @@ void IO::load_mesh_medit(std::string filename) {
         }
         else if ( s_eqi ( keyword, "TETRAHEDRON_VERTEX" ) ) {
             element_ids.clear();
-            f.str(text);
+            f.clear(); f.str(text);
             for (int n=0; n<4; n++) {
                 f >> val;
                 element_ids.push_back(val);
             }
-            mesh->add_element(element_ids);
+            Element* elem = mesh->add_element(element_ids);
+            f >> elem->zone;
         }
         else if ( s_eqi ( keyword, "PRISMS" ) ) {
             atoi ( text.c_str ( ) ); //number of prisms
@@ -314,12 +318,13 @@ void IO::load_mesh_medit(std::string filename) {
         }
         else if ( s_eqi ( keyword, "PRISMS_VERTEX" ) ) {
             element_ids.clear();
-            f.str(text);
+            f.clear(); f.str(text);
             for (int n=0; n<6; n++) {
                 f >> val;
                 element_ids.push_back(val);
             }
-            mesh->add_element(element_ids);
+            Element* elem = mesh->add_element(element_ids);
+            f >> elem->zone;
         }
         else if ( s_eqi ( keyword, "PYRAMIDS" ) ) {
             atoi ( text.c_str ( ) ); //number of pyramids
@@ -327,19 +332,20 @@ void IO::load_mesh_medit(std::string filename) {
         }
         else if ( s_eqi ( keyword, "PYRAMIDS_VERTEX" ) ) {
             element_ids.clear();
-            f.str(text);
+            f.clear(); f.str(text);
             for (int n=0; n<5; n++) {
                 f >> val;
                 element_ids.push_back(val);
             }
-            mesh->add_element(element_ids);
+            Element* elem = mesh->add_element(element_ids);
+            f >> elem->zone;
         }
         else if ( s_eqi ( keyword, "VERTICES" ) ) {
             atoi ( text.c_str ( ) ); //number of vertices
             keyword = "VERTEX_COORDINATE";
         }
         else if ( s_eqi ( keyword, "VERTEX_COORDINATE" ) ) {
-            f.str(text);
+            f.clear(); f.str(text);
             if (mesh->dim == 3) {
                 f >> x >> y >> z;
                 mesh->add_vertice(x,y,z,vertice_id);
