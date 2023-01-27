@@ -90,6 +90,7 @@ class OrthOpt
 
         void computeCostFunction();
         void computeCostDerivative(Eigen::VectorXd& grad); //in place assignement
+        void computeCostDerivative_FD(Eigen::VectorXd& grad, double pertub=1e-4);
         
         void decompose_mesh();
 

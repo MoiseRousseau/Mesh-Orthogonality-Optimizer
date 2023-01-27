@@ -48,7 +48,7 @@ class Connection
         //double compute_skewness();
         void compute_cell_center_vector();
         void compute_normal();
-        Eigen::MatrixXd derivative_A_position(Vertice* A);
+        Eigen::MatrixXd derivative_A_position_normal(Vertice* A);
         
         friend std::ostream& operator<<(std::ostream& os, const Connection& con) {
             //to print connection information (debug purpose)

@@ -83,15 +83,14 @@ void IO::load_vertices_xyz(std::string filename) {
     src.close();
 }
 void IO::save_vertices_xyz(std::string filename) {
-    std::ofstream src(filename);
-    src << std::scientific;
-    src << std::setprecision(8);
+    std::ofstream out(filename);
+    out << std::scientific;
+    out << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
-        src << (v->coor)[0] << ' ';
-        src << (v->coor)[1] << ' ';
-        src << (v->coor)[2] << std::endl;
+        //for (size_t i=0; i<mesh->dim; i++) 
+        out << (Eigen::RowVectorXd) *(v->coor) << std::endl;
     }
-    src.close();
+    out.close();
 }
 void IO::load_elements_with_vertice_ids(std::string filename) {
     //each line one element, and list of id separated by a space delimiter
@@ -517,8 +516,7 @@ void IO::save_mesh_medit(std::string filename) {
     out << std::scientific;
     out << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
-        for (size_t i=0; i<mesh->dim; i++) out << (v->coor)[i] << ' ';
-        out << "1" << std::endl;
+        out << (Eigen::RowVectorXd) *(v->coor) << " 1" << std::endl;
     }
 
     out << std::endl;

@@ -43,7 +43,7 @@ void Connection::compute_normal() {
         Eigen::VectorXd v(3);
         v << (*vertices[2]->coor) - (*vertices[1]->coor);
         //normal = u.cross(v);
-        normal << u[1]*v[2]-u[2]*v[1], u[0]*v[2]-u[2]*v[0], u[0]*v[1]-u[1]*v[0];
+        normal << u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0];
         area = normal.norm();
         normal /= area;
         area /= 2;
@@ -55,15 +55,19 @@ void Connection::compute_normal() {
     }
 }
 
-Eigen::MatrixXd Connection::derivative_A_position(Vertice* A) {
+Eigen::MatrixXd Connection::derivative_A_position_normal(Vertice* A) {
     Eigen::MatrixXd deriv;
     if (vertices.size() == 2) { //2D case
+        double prefactor = 1.;
+        if (A == vertices[1]) prefactor = -1; //does P is A or B, if B, negate
         deriv = Eigen::MatrixXd::Zero(2,2);
-        double x = 1./area; //area is length
+        double x = prefactor/area; //area is length
         deriv << 0, -x, x, 0;
     }
     else {
         //determine B and C point in various cases
+        //normal is B-A * C-B
+        //note we consider only tets here
         Vertice* B = nullptr;
         Vertice* C = nullptr;
         unsigned int index = 0;
@@ -71,19 +75,19 @@ Eigen::MatrixXd Connection::derivative_A_position(Vertice* A) {
             if (v == A) break;
             index += 1;
         }
-        if (index == 0) {B = vertices[1]; C = vertices[2];}
-        else if (index == 1) {
-            B = vertices[2];
-            if (vertices.size() == 3) {C = vertices[0];}
-            else {C = vertices[3];}
+        switch (index) {
+            case 0:
+                B = vertices[1]; C = vertices[2];
+                break;
+            case 1:
+                B = vertices[2]; C = vertices[0];
+                break;
+            case 2:
+                B = vertices[0]; C = vertices[1];
+                break;
         }
-        else if (index == 2) {
-            if (vertices.size() == 3) {B = vertices[0]; C = vertices[1];}
-            else {B = vertices[3]; C = vertices[0];}
-        }
-        else {B = vertices[0]; C = vertices[1];}
         //compute normal derivative
-        Eigen::Vector3d temp, BC;
+        Eigen::Vector3d BC;
         BC = *(C->coor) - *(B->coor);
         if (vertices.size() == 3) BC *= 0.5 / area; //face is a triangle
         else BC *= 1. / area;

@@ -1,6 +1,7 @@
 #Test mesh in Medit format with two tetrahedra and one internal face
 #Internal face vertice: [3,4,5]
 #Normal: [-0.70710678, -0.70710678,  0.        ]
+#Area: 1.41421
 #Cell center vector: [-0.5,  0. ,  0. ]
 #Orthogonality: 0.7071067811865475
 #Cost function (power error function with power 1): 0.29289321881345254

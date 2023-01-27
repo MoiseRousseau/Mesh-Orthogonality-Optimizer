@@ -27,46 +27,25 @@ void OrthOpt::computeCostFunction() {
 void OrthOpt::computeCostDerivative(Eigen::VectorXd& grad)
 {
     computeCostFunction(); //update normal, cell center vector and other
-    unsigned int index;
-    double prefactor;
-    Eigen::VectorXd deriv = Eigen::VectorXd::Zero(mesh->dim);
-    Eigen::VectorXd temp = Eigen::VectorXd::Zero(mesh->dim);
-    Connection* con;
     for (size_t i=0; i!=grad.size(); i++) {
         grad[i] = 0;
     }
-    #pragma omp parallel for private(con, deriv, index, prefactor) shared(grad)
+    #pragma omp parallel for shared(grad)
     for (unsigned int count=0; count != mesh->n_connections_internal; count++) {
-        con = mesh->connections_internal[count];
-        prefactor =  face_weight[count] * Ef->get_derivative(con->orthogonality); //w_f E_f'
-        // configuration II, point on the face
-        // temp = (r_f^T - (r_f^T . n_f) n_f^T), NOT divided by area, done in the dedicaced routine
-        temp = con->cell_center_vector - con->normal * (con->orthogonality);
-        temp /= con->area;
-        for (Vertice* p : con->vertices) {
-            //normal derivative
-            Eigen::MatrixXd deriv_dA = -con->derivative_A_position(p) * temp;
-            for (int i=0; i>mesh->dim; i++) deriv[i] = deriv_dA(i,0);
-            if (con->element_id_dn->type + con->element_id_up->type != 8 or
-                con->element_id_dn->type + con->element_id_up->type != -6) {
-                deriv += temp * (con->element_id_up->center_derivative(p) - con->element_id_dn->center_derivative(p) );
-            }
-            index = mesh->dim * derivative_vertice_ids[p->natural_id-1];
-            for (size_t i=0; i<mesh->dim; i++) {
-                #pragma omp atomic update
-                grad[index+i] -= prefactor * deriv[i];
-            }
-        }
+        Connection* con = mesh->connections_internal[count];
+        double prefactor =  face_weight[count] * Ef->get_derivative(con->orthogonality); //w_f E_f'
         // Configuration I, point not on the face
-        // temp = (n_f^T - (n_f^T . r_f) r_f^T) / | R_f |
-        temp = con->normal - con->cell_center_vector * (con->orthogonality);
+        // if this configuration, only the cell center derivative is non-null
+        // temp = (n_f^T - (n_f^T . r_f) r_f^T) / | R_f | (comes from unit vector derivative)
+        Eigen::VectorXd temp = con->normal - con->cell_center_vector * (con->orthogonality);
         temp /= con->cell_center_vector_norm;
+        Eigen::RowVectorXd deriv = Eigen::RowVectorXd::Zero(mesh->dim);
         // add contribution of vertices of element dn
         for (Vertice* p : con->element_id_dn->vertices) {
+            if (std::find(con->vertices.begin(), con->vertices.end(), p) != con->vertices.end()) continue;
             if (p->fixed) {continue;}
-            //if (con->vertices.find(p)) continue; //already treated TODO!
-            deriv = temp * con->element_id_up->center_derivative(p);
-            index = mesh->dim * derivative_vertice_ids[p->natural_id-1];
+            deriv = temp.transpose() * con->element_id_up->center_derivative(p);
+            size_t index = mesh->dim * derivative_vertice_ids[p->natural_id-1];
             for (size_t i=0; i<mesh->dim; i++) {
                 #pragma omp atomic update
                 grad[index+i] -= prefactor * deriv[i];
@@ -74,15 +53,70 @@ void OrthOpt::computeCostDerivative(Eigen::VectorXd& grad)
         }
         // add contribution of vertices of element up
         for (Vertice* p : con->element_id_up->vertices) { 
+            if (std::find(con->vertices.begin(), con->vertices.end(), p) != con->vertices.end()) continue;
             if (p->fixed) {continue;}
-            //if (con->vertices->contains(p)) continue; //already treated TODO
-            deriv = temp * con->element_id_up->center_derivative(p);
-            index = mesh->dim * derivative_vertice_ids[p->natural_id-1];
+            deriv = temp.transpose() * con->element_id_up->center_derivative(p);
+            size_t index = mesh->dim * derivative_vertice_ids[p->natural_id-1];
             for (size_t i=0; i<mesh->dim; i++) {
                 #pragma omp atomic update
                 grad[index+i] -= prefactor * deriv[i];
             }
         }
+        
+        // configuration II, point on the face
+        // 1. contribution of the normal part
+        deriv = Eigen::RowVectorXd::Zero(mesh->dim);
+        temp = con->cell_center_vector - con->normal * (con->orthogonality);
+        temp /= con->cell_center_vector_norm; 
+        //we do not divide by the area because it's done in the derivative_normal routine
+        for (Vertice* p : con->vertices) {
+            if (p->fixed) {continue;}
+            //normal derivative
+            Eigen::MatrixXd deriv_dA = con->derivative_A_position_normal(p) * temp;
+            for (int i=0; i<mesh->dim; i++) deriv[i] = deriv_dA(i,0);
+            size_t index = mesh->dim * derivative_vertice_ids[p->natural_id-1];
+            for (size_t i=0; i<mesh->dim; i++) {
+                #pragma omp atomic update
+                grad[index+i] -= prefactor * deriv[i];
+            }
+        }
+        
+        // 2. contribution of the cell center part
+        
+        deriv = Eigen::RowVectorXd::Zero(mesh->dim);
+        temp = con->normal - con->cell_center_vector * (con->orthogonality);
+        temp /= con->cell_center_vector_norm;
+        // add contribution of vertices of element dn
+        for (Vertice* p : con->element_id_dn->vertices) {}
+        // add contribution of vertices of element up
+        for (Vertice* p : con->element_id_up->vertices) {}
+    }
+}
+
+
+/*
+Compute the derivative of the cost function using finite difference
+For debug purpose
+*/
+void OrthOpt::computeCostDerivative_FD(Eigen::VectorXd& grad, double pertub)
+{
+    for (size_t i=0; i!=grad.size(); i++) {
+        grad[i] = 0;
+    }
+    for (Vertice* v : mesh->vertices) {
+         if (v->fixed) {continue;}
+         computeCostFunction();
+         double ref_cost = cost_function_value;
+         size_t index = mesh->dim * derivative_vertice_ids[v->natural_id-1];
+         for (size_t i=0; i<mesh->dim; i++) {
+             double coor_ini = (*v->coor)[i];
+             (*v->coor)[i] *= (1+pertub);
+             computeCostFunction();
+             double opt_pertub = cost_function_value;
+             grad[index+i] = (opt_pertub - ref_cost) / pertub;
+             (*v->coor)[i] = coor_ini;
+         }
+         computeCostFunction();
     }
 }
 
