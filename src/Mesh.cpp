@@ -31,6 +31,12 @@ void Mesh::decompose() {
         else if (elem->type == -4) { //quadrilateral
             build_connection(0,1,-1,-1, 2, elem, unique_id_map,
                              temp_connection);
+            build_connection(1,2,-1,-1, 3, elem, unique_id_map,
+                             temp_connection);
+            build_connection(2,3,-1,-1, 0, elem, unique_id_map,
+                             temp_connection);
+            build_connection(3,0,-1,-1, 1, elem, unique_id_map,
+                             temp_connection);
         }
         else if (elem->type == 4) { //tetrahedron
             //face 0 1 2, opposite 3
@@ -105,7 +111,7 @@ void Mesh::build_connection(int i, int j, int k, int h, \
     std::map<std::array<unsigned int, 4>, Connection*>::iterator it;
     Connection* con;
 
-    //build key
+    //build key 
     key[0] = elem->vertice_ids[i];
     key[1] = elem->vertice_ids[j];
 #ifdef DEBUG_MODE

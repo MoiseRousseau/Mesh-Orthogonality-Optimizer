@@ -82,14 +82,25 @@ void OrthOpt::computeCostDerivative(Eigen::VectorXd& grad)
         }
         
         // 2. contribution of the cell center part
-        
-        deriv = Eigen::RowVectorXd::Zero(mesh->dim);
-        temp = con->normal - con->cell_center_vector * (con->orthogonality);
-        temp /= con->cell_center_vector_norm;
-        // add contribution of vertices of element dn
-        for (Vertice* p : con->element_id_dn->vertices) {}
-        // add contribution of vertices of element up
-        for (Vertice* p : con->element_id_up->vertices) {}
+        // only if there is different element type
+        if (con->element_id_dn->type == -3 and con->element_id_up->type != -3 or con->element_id_dn->type == 4 and con->element_id_up->type != 4) {
+            deriv = Eigen::RowVectorXd::Zero(mesh->dim);
+            temp = con->normal - con->cell_center_vector * (con->orthogonality);
+            temp /= con->cell_center_vector_norm;
+            for (Vertice* p : con->vertices) {
+                if (p->fixed) {continue;}
+                //std::cout << temp << std::endl;
+                //std::cout << con->element_id_up->center_derivative(p) << std::endl;
+                //std::cout << con->element_id_dn->center_derivative(p) << std::endl;
+                deriv = temp.transpose() * (con->element_id_up->center_derivative(p) - con->element_id_dn->center_derivative(p)); 
+                //std::cout << deriv << std::endl;
+                size_t index = mesh->dim * derivative_vertice_ids[p->natural_id-1];
+                for (size_t i=0; i<mesh->dim; i++) {
+                    #pragma omp atomic update
+                    grad[index+i] -= prefactor * deriv[i];
+                }
+            }
+        }
     }
 }
 

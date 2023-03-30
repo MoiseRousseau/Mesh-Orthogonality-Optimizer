@@ -621,9 +621,9 @@ void IO::load_mesh_DAT_salome(std::string filename) {
     std::string line;
     src >> n_v >> n_e;
     for (unsigned int i=0; i<n_v; i++) {
-        if (mesh->dim == 2) src >> id >> x >> y;
-        else src >> id >> x >> y >> z;
-        mesh->add_vertice(x,y,z,id);
+        src >> id >> x >> y >> z;
+        if (mesh->dim == 2) mesh->add_vertice(x,y,id);
+        else mesh->add_vertice(x,y,z,id);
     }
     getline(src, line); //flush the rest of the previous line
     for (unsigned int i=0; i<n_e; i++) {
