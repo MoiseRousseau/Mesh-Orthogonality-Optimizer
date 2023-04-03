@@ -106,7 +106,6 @@ int optimize_mesh(
     int maxit, 
     double eps, 
     double eps_rel,
-    double x_rel,
     std::string f_output, 
     std::vector<unsigned int> ids_fixed,
     std::vector<double> aniso_coeff,
@@ -193,7 +192,7 @@ void print_program_information() {
     cout << " #                                         #" << endl;
     cout << " #  OrthOpt: Mesh Orthogonality Optimizer  #" << endl;
     cout << " #                                         #" << endl;
-    cout << " #        By: Moise Rousseau (2022)        #" << endl;
+    cout << " #        By: Moise Rousseau (2023)        #" << endl;
     cout << " #                                         #" << endl;
     cout << " ###########################################" << endl;
     cout << endl << "Publication DOI: TODO" << endl;
@@ -233,12 +232,11 @@ face error with the specified power, default = 1.)" << endl;
     cout << "\t--maxit <int> (Maximum number of iteration, default = 100)" << endl;
     cout << "\t--eps <value> (Absolute value of gradient norm for termination, default 1e-6)" << endl;
     cout << "\t--eps_rel <value> (Relative value of gradient norm for termination, default 1e-6)" << endl;
-    //cout << "\t--x_rel <value> (Relative value of solution norm for termination, default 1e-6)" << endl;
     cout << "\t--fd_gradient (Use finite difference to compute the gradient. This is very inefficient and should be used for debug purpose)" << endl;
     cout << "Miscellaneous parameters:" << endl;
     cout << "\t--quiet / -q (Quiet operation)" << endl;
     cout << "\t--n_threads <int> (Number of thread to run in parallel,\
-defaut = OpenMP decide)" << endl;
+default = OpenMP decide)" << endl;
     cout << endl;
 }
 
@@ -265,7 +263,7 @@ int main(int argc, char* argv[]) {
     int mode = 0; //0=optimize, 1=scan
     int function_type = 0; //identity
     int maxit = 100;
-    double eps = 1e-6, eps_rel = 1e-6, x_rel = 1e-6;
+    double eps = 1e-6, eps_rel = 1e-6;
     int weighting_method = 0; //0=no weighting, 1=face area, 2=face area inverse
     bool quiet = false;
     bool fd_grad = false;
@@ -331,9 +329,6 @@ int main(int argc, char* argv[]) {
         }
         else if (!strcmp(arg, "--eps_rel")) {
             iarg++; eps_rel = atof(argv[iarg]);
-        }
-        else if (!strcmp(arg, "--x_rel")) {
-            iarg++; x_rel = atof(argv[iarg]);
         }
         else if (!strcmp(arg, "--fd_gradient")) {
             fd_grad = true;
@@ -449,7 +444,7 @@ int main(int argc, char* argv[]) {
     switch (mode) {
         case 0:
             ret = optimize_mesh(&mesh, Ef, weighting_method, 
-                                maxit, eps, eps_rel, x_rel,
+                                maxit, eps, eps_rel,
                                 f_output, ids_fixed,
                                 aniso_coeff, fd_grad);
             io_mesh.save_mesh_auto(f_output);

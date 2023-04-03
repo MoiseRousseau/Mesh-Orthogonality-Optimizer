@@ -190,9 +190,9 @@ void Mesh::save_face_non_orthogonality_angle(std::string f_out) {
         out << con->element_id_up->natural_id << " ";
         //out << std::acos(std::abs(con->orthogonality)) * 57.29583 << std::endl; //57.2583 = 180 / pi
         out << 1-con->compute_orthogonality() << std::endl;
-    	if (con->orthogonality < 0) {
-    	    inverted_element++;
-    	}
+        if (con->orthogonality < 0) {
+            inverted_element++;
+        }
     }
     if (inverted_element != 0) {
         std::cout << "WARNING: " <<  inverted_element;
@@ -203,18 +203,19 @@ void Mesh::save_face_non_orthogonality_angle(std::string f_out) {
 
 void Mesh::save_face_detailed_informations(std::string f_out) {
     std::ofstream out(f_out);
-    out << "id1 id2 v1 v2 v3 v4 area nx ny nz cx cy cz error" << std::endl;
+    if (dim == 2) out << "id1\tid2\tv1\tv2\tlength\tnx\tny\tcx\tcy\terror";
+    else out << "id1\tid2\tv1\tv2\tv3\tv4\tarea\tnx\tny\tnz\tcx\tcy\tcz\terror";
+    out << std::endl;
     for (Connection* con : connections_internal) {
-        out << con->element_id_dn->natural_id << " ";
-        out << con->element_id_up->natural_id << " ";
-        for (Vertice* v: con->vertices) {out << v->natural_id << " ";}
-        if (con->vertices.size() == 3) {out << "-1 ";}
-        out << con->area << " ";
-        for (size_t i=0; i<dim; i++) out << (con->normal)[i] << " ";
-        for (size_t i=0; i<dim; i++) out << (con->cell_center_vector)[i] << " ";
+        out << con->element_id_dn->natural_id << "\t";
+        out << con->element_id_up->natural_id << "\t";
+        for (Vertice* v: con->vertices) {out << v->natural_id << "\t";}
+        if (con->vertices.size() == 3) {out << "-1\t";}
+        out << con->area << "\t";
+        for (size_t i=0; i<dim; i++) out << (con->normal)[i] << "\t";
+        for (size_t i=0; i<dim; i++) out << (con->cell_center_vector)[i] << "\t";
         con->compute_orthogonality();
-        
-        out << 1-con->orthogonality << " " << std::endl;
+        out << 1-con->orthogonality << std::endl;
     }
     out.close();
 }

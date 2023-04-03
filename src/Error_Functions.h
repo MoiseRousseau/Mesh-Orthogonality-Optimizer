@@ -55,6 +55,7 @@ class Id_Function: public Error_Function
         }
 };
 
+
 /**
  * Penalize high non-orthogonality using a power function
  *
@@ -68,24 +69,26 @@ class Power_Function: public Error_Function
         Power_Function(double power) {
             if (power < 1) {
                 std::invalid_argument("Penalizing power in power weighting face \
-                error funcion cannot be null or negative");
+                error funcion cannot be < 1");
             }
             penalizing_power = power;
         }
         
         double get_value(double ortho) { 
-            if (ortho <= 0.) {
-                return std::log(-1); //NaN
-            }
-            else {
-                return std::pow(1-ortho, penalizing_power);
-            }
+            return std::pow(1-ortho, penalizing_power);
         }
         double get_derivative(double ortho) {
             return - penalizing_power * std::pow(1-ortho, penalizing_power-1);
         }
 };
 
+
+/**
+ * Penalize high non-orthogonality using a inverse power function
+ *
+ * @param the penalization power n
+ * @return 1/(orthogonality)^n
+ */
 class Inverse_Function: public Error_Function
 {
     public:
@@ -99,18 +102,19 @@ class Inverse_Function: public Error_Function
         }
         
         double get_value(double ortho) {
-            if (ortho <= 0.) {
-                return std::log(-1); //NaN
-            }
-            else {
-                return 1/std::pow(ortho, penalizing_power) - 1;
-            }
+            return 1/std::pow(ortho, penalizing_power) - 1;
         }
         double get_derivative(double ortho) {
             return - penalizing_power * std::pow(ortho, penalizing_power+1);
         }
 };
 
+
+/**
+ * Penalize high non-orthogonality using a log function
+ *
+ * @return -log(orthogonality)
+ */
 class Log_Function: public Error_Function
 {
     public:
@@ -123,6 +127,13 @@ class Log_Function: public Error_Function
         }
 };
 
+
+/**
+ * Penalize high non-orthogonality using an exponential function
+ *
+ * @param the penalization power n
+ * @return exp(n*(1-orthogonality))
+ */
 class Exp_Function: public Error_Function
 {
     public:
@@ -131,13 +142,19 @@ class Exp_Function: public Error_Function
             power = power_;
         }
         double get_value(double ortho) {
-            return std::exp(power*(1-ortho));
+            return std::exp(power*(1-ortho))-1.;
         }
         double get_derivative(double ortho) {
             return -power*std::exp(power*(1-ortho));
         }
 };
 
+
+/**
+ * Penalize high non-orthogonality using the tan function
+ *
+ * @return -tan(orthogonality)
+ */
 class Tan_Function: public Error_Function
 {
     public:

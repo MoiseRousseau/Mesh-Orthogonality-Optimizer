@@ -1,0 +1,25 @@
+#Test mesh in Medit format with two quads and one internal face
+#Internal face vertice: [1, 2]
+#Length: 1.
+#Normal: [ 1. , 0.]
+#Cell center vector: [ 0.99755646 , 0.0.06986496 ]
+#Orthogonality: 
+#Cost function (power error function with power 1): 0.002443540000000022
+
+MeshVersionFormatted 2
+
+Dimension 2
+
+Vertices
+6
+0. 0. 1
+0. 1. 1
+1. 1. 1
+0.7 -0.2 1
+-0.8 0.5 1
+-1. 0.2 1
+
+Quadrilaterals
+2
+1 2 3 4 1
+1 2 5 6 1

@@ -4,7 +4,7 @@
 
 void Connection::check_orientation() {
     compute_orthogonality();
-    if (orthogonality < 0.) {
+    if (std::isnan(orthogonality)) {
         auto temp = element_id_up;
         element_id_up = element_id_dn;
         element_id_dn = temp;
@@ -19,8 +19,10 @@ double Connection::compute_orthogonality() {
     compute_cell_center_vector();
     compute_normal();
     orthogonality = cell_center_vector.dot(normal);
-    if (std::abs(orthogonality) < 1e-6) {orthogonality = 1e-6;}
-    //if (orthogonality > 1) {orthogonality = 1;}
+    //enforce positive orthogonality to prevent inverted elements
+    if (orthogonality < 0.) orthogonality = std::nan("");
+    //if (std::abs(orthogonality) < 1e-6) {orthogonality = 1e-6;}
+    if (orthogonality > 1) {orthogonality = 1;}
     return orthogonality;
 }
 
