@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 #set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ftree-vectorize -ffast-math")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -ftree-vectorize")
 
 #------------------
 # Define target 

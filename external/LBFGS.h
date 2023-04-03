@@ -173,6 +173,8 @@ public:
     /// \return A const reference to the gradient vector.
     ///
     const Vector& final_grad() const { return m_grad; }
+    
+    const Vector& last_solution() const { return m_xp; }
 
     ///
     /// Returning the Euclidean norm of the final gradient.

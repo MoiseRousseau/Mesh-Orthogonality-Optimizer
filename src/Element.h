@@ -152,6 +152,7 @@ class Polygon_Element : public Element
             std::cout << "deriv" << std::endl << derivative << std::endl << "end" << std::endl;
             return derivative;
 #endif
+            //TODO: this is not thread safe!!!
             double pertub = 1e-8;
             double old_coor;
 

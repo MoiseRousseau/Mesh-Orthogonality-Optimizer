@@ -140,7 +140,7 @@ int optimize_mesh(
     param.epsilon = eps;
     param.epsilon_rel = eps_rel;
     param.max_linesearch = 100;
-    LBFGSpp::LBFGSSolver<double, LBFGSpp::LineSearchBracketing> solver(param);
+    LBFGSpp::LBFGSSolver<double, LBFGSpp::LineSearchMoreThuente> solver(param);
     
     //pre-solve
     cout << "Number of vertices to optimize: " << opt.n_vertices_to_opt << endl;
@@ -153,21 +153,16 @@ int optimize_mesh(
     try {
         niter = solver.minimize(wrapper, x, fx);
     }
-    catch (runtime_error) {
-        //mesh->save_face_non_orthogonality_angle("./face_error_final.txt");
-        throw;
+    catch (const std::exception &e)
+    {
+        //update mesh based on last successfull iteration
+        opt.update_vertices_position(solver.last_solution());
+        std::cout << "Caught Exception!!!" << std::endl;
+        std::cout << e.what() << std::endl;
+        std::cout << "Stop and saving the final mesh" << std::endl << std::endl;
         return 1;
     }
-    catch (logic_error) {
-        cout << endl << "Logic error" << endl;
-        cout << "You are not supposed to be here and probably find a bug..." << endl;
-        cout << "You can report it, or ignore it." << endl;
-        cout << "Or you ca change the penalization power to make thing work" << endl;
-        cout << endl;
-        //opt.save_face_error_derivative("derivative_error.dat");
-        throw;
-        return 1;
-    }
+    
     cout << "Optimized cost function: " << fx << endl;
 
     //mesh->save_face_non_orthogonality_angle("./face_error_final.txt");
