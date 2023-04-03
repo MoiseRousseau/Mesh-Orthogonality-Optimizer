@@ -140,7 +140,7 @@ int optimize_mesh(
     param.epsilon = eps;
     param.epsilon_rel = eps_rel;
     param.max_linesearch = 100;
-    LBFGSpp::LBFGSSolver<double> solver(param);
+    LBFGSpp::LBFGSSolver<double, LBFGSpp::LineSearchBracketing> solver(param);
     
     //pre-solve
     cout << "Number of vertices to optimize: " << opt.n_vertices_to_opt << endl;
