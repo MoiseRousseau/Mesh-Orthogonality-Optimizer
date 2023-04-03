@@ -90,6 +90,7 @@ class OrthOpt
 
         void computeCostFunction();
         void computeCostDerivative(Eigen::VectorXd& grad); //in place assignement
+        void computeCostDerivative_FD(Eigen::VectorXd& grad, double pertub=1e-4);
         
         void decompose_mesh();
 
@@ -100,45 +101,6 @@ class OrthOpt
         void save_face_error(std::string f_out);
         void save_face_error_derivative(std::string f_out);
 
-
-    protected:
-
-    private:
-        Eigen::Vector3d derivative_E_position(Connection* con) {
-            return ((con->normal - con->cell_center_vector * (con->orthogonality)) \
-                    / con->cell_center_vector_norm * 0.25);
-        }
-
-        Eigen::Vector3d derivative_A_position(Connection* con, Vertice* A) {
-            //determine B and C point in various cases
-            Vertice* B = nullptr;
-            Vertice* C = nullptr;
-            unsigned int index = 0;
-            for (Vertice* v : con->vertices) {
-                if (v == A) break;
-                index += 1;
-            }
-            if (index == 0) {B = con->vertices[1]; C = con->vertices[2];}
-            else if (index == 1) {
-                B = con->vertices[2];
-                if (con->vertices.size() == 3) {C = con->vertices[0];}
-                else {C = con->vertices[3];}
-            }
-            else if (index == 2) {
-                if (con->vertices.size() == 3) {B = con->vertices[0]; C = con->vertices[1];}
-                else {B = con->vertices[3]; C = con->vertices[0];}
-            }
-            else {B = con->vertices[0]; C = con->vertices[1];}
-            //compute normal derivative
-            if (con->vertices.size() == 3) { //face is a triangle
-                return ((con->cell_center_vector - con->normal*(con->orthogonality)).cross( \
-                        *(C->coor)-*(B->coor)) / (2*con->area));
-            }
-            else {
-                return ((con->cell_center_vector - con->normal*(con->orthogonality)).cross( \
-                        *(C->coor)-*(B->coor)) / (con->area));
-            }
-        }
 };
 
 #endif // ORTHOPT_H

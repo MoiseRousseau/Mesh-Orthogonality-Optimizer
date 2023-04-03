@@ -29,7 +29,14 @@ void Mesh::decompose() {
                              temp_connection);
         }
         else if (elem->type == -4) { //quadrilateral
-        
+            build_connection(0,1,-1,-1, 2, elem, unique_id_map,
+                             temp_connection);
+            build_connection(1,2,-1,-1, 3, elem, unique_id_map,
+                             temp_connection);
+            build_connection(2,3,-1,-1, 0, elem, unique_id_map,
+                             temp_connection);
+            build_connection(3,0,-1,-1, 1, elem, unique_id_map,
+                             temp_connection);
         }
         else if (elem->type == 4) { //tetrahedron
             //face 0 1 2, opposite 3
@@ -70,11 +77,17 @@ void Mesh::decompose() {
 #ifdef DEBUG_MODE
         std::cout << *con << std::endl;
 #endif
-        if (con->vertice_up == nullptr) {
+        if (con->element_id_up == nullptr) {
             for (Vertice* v : con->vertices) {
                 v->fix_vertice();
             }
             boundary_connections.push_back(con);
+        }
+        else if (con->element_id_up->zone != con->element_id_dn->zone) {
+            for (Vertice* v : con->vertices) {
+                v->fix_vertice();
+            }
+            connections_internal.push_back(con);
         }
         else {
             connections_internal.push_back(con);
@@ -98,7 +111,7 @@ void Mesh::build_connection(int i, int j, int k, int h, \
     std::map<std::array<unsigned int, 4>, Connection*>::iterator it;
     Connection* con;
 
-    //build key
+    //build key 
     key[0] = elem->vertice_ids[i];
     key[1] = elem->vertice_ids[j];
 #ifdef DEBUG_MODE
@@ -118,7 +131,9 @@ void Mesh::build_connection(int i, int j, int k, int h, \
     if (it != unique_id_map.end()) { //key already in
         //terminate connection connection
         it->second->element_id_up = elem;
-        it->second->vertice_up = elem->vertices[opposite];
+        //it->second->vertice_up = elem->vertices[opposite];
+        it->second->normal = Eigen::VectorXd::Zero(dim);
+        it->second->cell_center_vector = Eigen::VectorXd::Zero(dim);
         it->second->check_orientation();
         unique_id_map.erase(it);
     }
@@ -129,7 +144,7 @@ void Mesh::build_connection(int i, int j, int k, int h, \
         if (dim == 3) con->vertices.push_back(elem->vertices[k]);
         if (h>0) con->vertices.push_back(elem->vertices[h]);
         con->element_id_dn = elem;
-        con->vertice_dn = elem->vertices[opposite];
+        //con->vertice_dn = elem->vertices[opposite];
         unique_id_map[key] = con;
         temp_connection.push_back(con);
     }
@@ -175,9 +190,9 @@ void Mesh::save_face_non_orthogonality_angle(std::string f_out) {
         out << con->element_id_up->natural_id << " ";
         //out << std::acos(std::abs(con->orthogonality)) * 57.29583 << std::endl; //57.2583 = 180 / pi
         out << 1-con->compute_orthogonality() << std::endl;
-    	if (con->orthogonality < 0) {
-    	    inverted_element++;
-    	}
+        if (con->orthogonality < 0) {
+            inverted_element++;
+        }
     }
     if (inverted_element != 0) {
         std::cout << "WARNING: " <<  inverted_element;
@@ -188,18 +203,19 @@ void Mesh::save_face_non_orthogonality_angle(std::string f_out) {
 
 void Mesh::save_face_detailed_informations(std::string f_out) {
     std::ofstream out(f_out);
-    out << "id1 id2 v1 v2 v3 v4 area nx ny nz cx cy cz error" << std::endl;
+    if (dim == 2) out << "id1\tid2\tv1\tv2\tlength\tnx\tny\tcx\tcy\terror";
+    else out << "id1\tid2\tv1\tv2\tv3\tv4\tarea\tnx\tny\tnz\tcx\tcy\tcz\terror";
+    out << std::endl;
     for (Connection* con : connections_internal) {
-        out << con->element_id_dn->natural_id << " ";
-        out << con->element_id_up->natural_id << " ";
-        for (Vertice* v: con->vertices) {out << v->natural_id << " ";}
-        if (con->vertices.size() == 3) {out << "-1 ";}
-        out << con->area << " ";
-        for (size_t i=0; i<dim; i++) out << (con->normal)[i] << " ";
-        for (size_t i=0; i<dim; i++) out << (con->cell_center_vector)[i] << " ";
+        out << con->element_id_dn->natural_id << "\t";
+        out << con->element_id_up->natural_id << "\t";
+        for (Vertice* v: con->vertices) {out << v->natural_id << "\t";}
+        if (con->vertices.size() == 3) {out << "-1\t";}
+        out << con->area << "\t";
+        for (size_t i=0; i<dim; i++) out << (con->normal)[i] << "\t";
+        for (size_t i=0; i<dim; i++) out << (con->cell_center_vector)[i] << "\t";
         con->compute_orthogonality();
-        
-        out << 1-con->orthogonality << " " << std::endl;
+        out << 1-con->orthogonality << std::endl;
     }
     out.close();
 }

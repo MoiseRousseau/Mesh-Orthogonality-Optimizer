@@ -62,9 +62,12 @@ class Mesh
             Vertice* A = new Vertice(x,y,z,id);
             vertices.push_back(A);
         }
-        void add_element(std::vector<unsigned int> ids) {
+        Element* add_element(std::vector<unsigned int> ids) {
             n_elements += 1;
-            Element* elem = new Element();
+            Element* elem;
+            if (ids.size() == 3) elem = new Tri_Element();
+            else if (dim == 2) elem = new Polygon_Element();
+            else elem = new Tet_Element();
             for (auto id = ids.begin(); id != ids.end(); id++) {
                 elem->vertice_ids.push_back(*id);
             }
@@ -72,6 +75,7 @@ class Mesh
             else elem->type = ids.size();
             elem->natural_id = n_elements;
             elements.push_back(elem);
+            return elem;
         }
         
         

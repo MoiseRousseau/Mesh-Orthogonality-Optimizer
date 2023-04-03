@@ -51,6 +51,7 @@ class Wrapper_for_LBFGS
 
         OrthOpt* opt;
         LBFGSpp::LBFGSParam<double> param;
+        bool fd_grad = false;
 
         Wrapper_for_LBFGS(OrthOpt* opt_in) {
             opt = opt_in;
@@ -62,9 +63,20 @@ class Wrapper_for_LBFGS
             //update vertices position from x first
             opt->update_vertices_position(x);
             //then compute cost and derivative
-            opt->computeCostDerivative(grad);
+            if (fd_grad) opt->computeCostDerivative_FD(grad);
+            else opt->computeCostDerivative(grad);
+            
             //std::ostringstream f_out;
             //f_out << "derivative_it" << iteration << ".dat";
+#ifdef DEBUG_MODE
+            std::cout << "Analytic gradient:" << std::endl;
+            std::cout << grad << std::endl;
+            std::cout << "FD gradient:" << std::endl;
+            opt->computeCostDerivative_FD(grad);
+            std::cout << grad << std::endl;
+            std::cout << "position" << std::endl;
+            std::cout << x << std::endl;
+#endif
             return opt->cost_function_value;
         }
 
@@ -87,13 +99,18 @@ class Wrapper_for_LBFGS
 };
 
 
-int optimize_mesh(Mesh* mesh, 
-                  Error_Function* Ef, int weighting_method,
-                  int maxit, double eps, double eps_rel,
-                  std::string f_output, 
-                  std::vector<unsigned int> ids_fixed) { 
-    
-    
+int optimize_mesh(
+    Mesh* mesh, 
+    Error_Function* Ef, 
+    int weighting_method,
+    int maxit, 
+    double eps, 
+    double eps_rel,
+    std::string f_output, 
+    std::vector<unsigned int> ids_fixed,
+    std::vector<double> aniso_coeff,
+    bool fd_grad
+) { 
     //set up optimization problem class
     OrthOpt opt(mesh, Ef);
     switch (weighting_method) {
@@ -113,6 +130,7 @@ int optimize_mesh(Mesh* mesh,
     
     //setup optimizer
     Wrapper_for_LBFGS wrapper(&opt);
+    wrapper.fd_grad = fd_grad;
     //create initial guess to pass to the solver
     //the vertice position actually
     Eigen::VectorXd x = wrapper.initialize_solution_vec();
@@ -122,7 +140,7 @@ int optimize_mesh(Mesh* mesh,
     param.epsilon = eps;
     param.epsilon_rel = eps_rel;
     param.max_linesearch = 100;
-    LBFGSpp::LBFGSSolver<double> solver(param);
+    LBFGSpp::LBFGSSolver<double, LBFGSpp::LineSearchBracketing> solver(param);
     
     //pre-solve
     cout << "Number of vertices to optimize: " << opt.n_vertices_to_opt << endl;
@@ -174,9 +192,10 @@ void print_program_information() {
     cout << " #                                         #" << endl;
     cout << " #  OrthOpt: Mesh Orthogonality Optimizer  #" << endl;
     cout << " #                                         #" << endl;
-    cout << " #        By: Moise Rousseau (2022)        #" << endl;
+    cout << " #        By: Moise Rousseau (2023)        #" << endl;
     cout << " #                                         #" << endl;
     cout << " ###########################################" << endl;
+    cout << endl << "Publication DOI: TODO" << endl;
     cout << endl;
 }
 
@@ -185,37 +204,39 @@ void print_program_help(char* argv[]) {
 [output_optimized_vertices] [opt_parameters]" << endl;
     cout << endl;
     cout << "Mode:" << endl;
-    cout << "\t-scan (read the mesh and return statistics on mesh area, center, \
+    cout << "\t--scan (read the mesh and return statistics on mesh area, center, \
 non-orthogonality and skewness)"  << endl;
-    cout << "\t-optimize (optimize the mesh vertice position - default)" << endl;
+    cout << "\t--optimize (optimize the mesh vertice position - default)" << endl;
     cout << endl;
     cout << "Input mesh:" << endl;
-    cout << "\t-v-tetgen <path to tetgen mesh coordinates>" << endl;
-    cout << "\t-e-tetgen <path to tetgen mesh elements>" << endl;
-    cout << "\t-m <path to mesh file (Medit / Salome DAT / PFLOTRAN)>" << endl;
-    cout << "\t-fixed <path to fixed vertices id> (optional)" << endl;
-    cout << "\t-dimension <2/3> (Mesh dimension, default 3 if not specified in mesh format, e.g. Medit)" << endl;
+    cout << "\t--v-tetgen <path to tetgen mesh coordinates>" << endl;
+    cout << "\t--e-tetgen <path to tetgen mesh elements>" << endl;
+    cout << "\t--mesh / -m <path to mesh file (Medit / Salome DAT / PFLOTRAN)>" << endl;
+    cout << "\t--fixed <path to fixed vertices id> (optional)" << endl;
+    cout << "\t--dimension <2/3> (Mesh dimension, default 3 if not specified in mesh format, e.g. Medit)" << endl;
+    cout << "\t--anisotropic_diff_coef <path to file> (Optimize a 2D considering a anisotropic and heterogeneous diffusion coefficient to respect the K-orthogonality condition, optional)" << endl;
     cout << endl;
     cout << "Optimized vertices position output (xyz format):" << endl;
-    cout << "\t-o <output file> (Default \"out.xyz\", output format deduced from extension)" << endl;
+    cout << "\t--output / -o <output file> (Default \"out.xyz\", output format deduced from extension)" << endl;
     cout << endl;
     cout << "Error function parameters:" << endl;
-    cout << "\t-function_type <int> (Method to compute penalize error, 0 = power function, 1 = inverse function, 2 = log function, 3 = exp function, default = 0)" << endl;
-    cout << "\t-penalizing_power <float> (Power or inverse function, penalize\
+    cout << "\t--function_type <int> (Method to compute penalize error, 0 = identity, 1 = power function, 2 = inverse function, 3 = log function, 4 = exp function, default = 0)" << endl;
+    cout << "\t--penalizing_power <float> (Power or inverse function, penalize\
 face error with the specified power, default = 1.)" << endl;
-    cout << "\t-face_weighting <int> (Method to weight face error, \
+    cout << "\t--face_weighting <int> (Method to weight face error, \
 0 = no weighting, 1 = weight by face area,\
 2 = weight by face area inverse, default = 0)"<< endl;
     //cout << "\t-face_weighting_file <path>" << endl;
     cout << endl;
     cout << "Optimization parameters:" << endl;
-    cout << "\t-maxit <int> (Maximum number of iteration, default = 100)" << endl;
-    cout << "\t-eps <value> (Absolute value of gradient norm for termination, default 1e-6)" << endl;
-    cout << "\t-eps_rel <value> (Relative value of gradient norm for termination, default 1e-6)" << endl;
+    cout << "\t--maxit <int> (Maximum number of iteration, default = 100)" << endl;
+    cout << "\t--eps <value> (Absolute value of gradient norm for termination, default 1e-6)" << endl;
+    cout << "\t--eps_rel <value> (Relative value of gradient norm for termination, default 1e-6)" << endl;
+    cout << "\t--fd_gradient (Use finite difference to compute the gradient. This is very inefficient and should be used for debug purpose)" << endl;
     cout << "Miscellaneous parameters:" << endl;
-    cout << "\t-q (Quiet operation)" << endl;
-    cout << "\t-n_threads <int> (Number of thread to run in parallel,\
-defaut = OpenMP decide)" << endl;
+    cout << "\t--quiet / -q (Quiet operation)" << endl;
+    cout << "\t--n_threads <int> (Number of thread to run in parallel,\
+default = OpenMP decide)" << endl;
     cout << endl;
 }
 
@@ -228,9 +249,6 @@ int get_argument(int argc, char* argv[], string arg) {
 }
 
 
-
-
-
 int main(int argc, char* argv[]) {
 
     print_program_information();
@@ -240,18 +258,19 @@ int main(int argc, char* argv[]) {
     std::string f_mesh = ""; //general mesh (medit / ...)
     std::string f_fixed = ""; //path to fixed point in the mesh
     std::string f_output = "out.xyz"; //output name
+    std::string f_aniso = ""; //anisotropic diffusion coefficient file
     double penalizing_power = 1.;
     int mode = 0; //0=optimize, 1=scan
-    int function_type = 0;
+    int function_type = 0; //identity
     int maxit = 100;
-    double eps = 1e-6;
-    double eps_rel = 1e-6;
+    double eps = 1e-6, eps_rel = 1e-6;
     int weighting_method = 0; //0=no weighting, 1=face area, 2=face area inverse
     bool quiet = false;
+    bool fd_grad = false;
     int dim = 3;
 
     //parse input
-    if (argc < 2 or get_argument(argc, argv, "-h") != 0) {
+    if (argc < 2 or get_argument(argc, argv, "--help") != 0 or get_argument(argc, argv, "-h")) {
         // Tell the user how to run the program
         print_program_help(argv);
         return 0;
@@ -262,58 +281,64 @@ int main(int argc, char* argv[]) {
     while (iarg < argc) {
         arg = argv[iarg];
         // MODE //
-        if (!strcmp(arg, "-optimize")) {
+        if (!strcmp(arg, "--optimize")) {
             mode=0;
         }
-        else if (!strcmp(arg, "-scan")) {
+        else if (!strcmp(arg, "--scan")) {
             mode=1;
         }
         // INPUT //
-        else if (!strcmp(arg, "-v-tetgen")) {
+        else if (!strcmp(arg, "--v-tetgen")) {
             iarg++; f_vertices = argv[iarg];
         }
-        else if (!strcmp(arg, "-m")) {
+        else if (!strcmp(arg, "-m") or (!strcmp(arg, "--mesh"))) {
             iarg++; f_mesh = argv[iarg];
         }
-        else if (!strcmp(arg, "-e-tetgen")) {
+        else if (!strcmp(arg, "--e-tetgen")) {
             iarg++; f_elements = argv[iarg];
         }
-        else if (!strcmp(arg, "-fixed")) {
+        else if (!strcmp(arg, "--fixed")) {
             iarg++; f_fixed = argv[iarg];
         }
-        else if (!strcmp(arg, "-dimension")) {
+        else if (!strcmp(arg, "--dimension")) {
             iarg++; dim = atoi(argv[iarg]);
         }
+        else if (!strcmp(arg, "--anisotropic_diff_coef")) {
+            iarg++; f_aniso = argv[iarg];
+        }
         // OUTPUT //
-        else if (!strcmp(arg, "-o")) {
+        else if (!strcmp(arg, "-o") or !strcmp(arg, "--output")) {
             iarg++; f_output = argv[iarg];
         }
         // ERROR FUNCTION //
-        else if (!strcmp(arg, "-function_type")) {
+        else if (!strcmp(arg, "--function_type")) {
             iarg++; function_type = atoi(argv[iarg]);
         }
-        else if (!strcmp(arg, "-penalizing_power")) {
+        else if (!strcmp(arg, "--penalizing_power")) {
             iarg++; penalizing_power = atof(argv[iarg]);
         }
-        else if (!strcmp(arg, "-face_weighting")) {
+        else if (!strcmp(arg, "--face_weighting")) {
             iarg++; weighting_method = atoi(argv[iarg]);
         }
         // OPTIMIZATION PARAMETER //
-        else if (!strcmp(arg, "-maxit")) {
+        else if (!strcmp(arg, "--maxit")) {
             iarg++; maxit = atoi(argv[iarg]);
         }
-        else if (!strcmp(arg, "-eps")) {
+        else if (!strcmp(arg, "--eps")) {
             iarg++; eps = atof(argv[iarg]);
         }
-        else if (!strcmp(arg, "-eps_rel")) {
+        else if (!strcmp(arg, "--eps_rel")) {
             iarg++; eps_rel = atof(argv[iarg]);
         }
-        else if (!strcmp(arg, "-n_threads")) {
+        else if (!strcmp(arg, "--fd_gradient")) {
+            fd_grad = true;
+        }
+        else if (!strcmp(arg, "--n_threads")) {
+            iarg++; eps_rel = atof(argv[iarg]);
 #if defined _OPENMP
-            iarg++; omp_set_num_threads(atoi(argv[iarg]));
 #endif
         }
-        else if (!strcmp(arg, "-q")) {
+        else if (!strcmp(arg, "-q") or !strcmp(arg, "--quiet")) {
             quiet = true;
         }
         else {
@@ -331,7 +356,7 @@ int main(int argc, char* argv[]) {
          return 1;
     }
     
-    if ((function_type < 0) or (function_type) > 3) {
+    if ((function_type < 0) or (function_type) > 4) {
         cerr << "Error! function type not recognized: " << function_type << endl;
         return 1;
     }
@@ -351,26 +376,30 @@ int main(int argc, char* argv[]) {
         if (mode == 0) {
             switch (function_type) {
                 case 0:
+                    Ef = new Id_Function();
+                    cout << "Penalize orthogonality error with identity function" << endl;
+                    break;
+                case 1:
                     Ef = new Power_Function(penalizing_power);
                     cout << "Penalize orthogonality error with power\
  function at power " << penalizing_power << endl;
                     break;
-                case 1:
+                case 2:
                     Ef = new Inverse_Function (penalizing_power);
                     cout << "Penalize orthogonality error with inverse\
  function at power " << penalizing_power << endl;
                     break;
-                case 2:
+                case 3:
                     Ef = new Log_Function();
                     cout << "Penalize orthogonality error with logarithm\
  function" << endl;
                     break;
-                case 3:
+                case 4:
                     Ef = new Exp_Function(penalizing_power);
                     cout << "Penalize orthogonality error with exponential\
  function at power " << penalizing_power << endl;
                     break;
-                case 4: 
+                case 5: 
                     Ef = new Tan_Function();
                     cout << "Penalize orthogonality error with tangent\
  function" << endl;
@@ -391,12 +420,33 @@ int main(int argc, char* argv[]) {
         }
         src_fixed.close();
     }
+    // get anisotropic coefficient
+    // Kx Ky Kxy per line, 1 line per element
+    std::vector<double> aniso_coeff;
+    double Kx, Ky, Kxy;
+    size_t count = 0;
+    if (f_aniso.size() != 0) {
+        std::ifstream src_fixed(f_fixed);
+        while (src_fixed >> Kx >> Ky >> Kxy) {
+            aniso_coeff.push_back(Kx);
+            aniso_coeff.push_back(Ky);
+            aniso_coeff.push_back(Kxy);
+            count++;
+        }
+        if (count != mesh.elements.size()) {
+            cout << "Number of diffusion coefficient does not match number of element in the mesh. You should define three diffusion coefficient components (Kx, Ky, Kxy) for each element." << endl; 
+            exit(1);
+        }
+        src_fixed.close();
+    }
     
     int ret = 0;
     switch (mode) {
         case 0:
             ret = optimize_mesh(&mesh, Ef, weighting_method, 
-                                maxit, eps, eps_rel, f_output, ids_fixed);
+                                maxit, eps, eps_rel,
+                                f_output, ids_fixed,
+                                aniso_coeff, fd_grad);
             io_mesh.save_mesh_auto(f_output);
             break;
         case 1: 

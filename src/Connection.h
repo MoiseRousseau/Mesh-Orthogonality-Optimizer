@@ -14,11 +14,11 @@ class Connection
         Element* element_id_up = nullptr; //element in the direction of face normal
         Element* element_id_dn = nullptr; //the other
         std::vector<Vertice*> vertices;
-        Vertice* vertice_up = nullptr;
-        Vertice* vertice_dn = nullptr;
+        //std::vector<Vertice*> vertice_up = nullptr;
+        //std::vector<>Vertice* vertice_dn = nullptr;
         double area = -1; //face area
-        Eigen::Vector3d normal; //face normal, norm = area, or length in 2D
-        Eigen::Vector3d cell_center_vector;  //vector linking the two cell center
+        Eigen::VectorXd normal; //face normal, norm = area, or length in 2D
+        Eigen::VectorXd cell_center_vector;  //vector linking the two cell center
         double cell_center_vector_norm = 0.; // and its norm
         double orthogonality = -1; //(r_f*n_f), 1 mean no error, 0 full error
         //double skewness = -1;
@@ -36,11 +36,11 @@ class Connection
         }
         void set_up_info(Element* id_up, Vertice* v_up) {
             element_id_up = id_up;
-            vertice_up = v_up;
+            //vertice_up = v_up;
         }
         void set_dn_info(Element* id_dn, Vertice* v_dn) {
             element_id_dn = id_dn;
-            vertice_dn = v_dn;
+            //vertice_dn = v_dn;
         }
         
         void check_orientation();
@@ -48,6 +48,7 @@ class Connection
         //double compute_skewness();
         void compute_cell_center_vector();
         void compute_normal();
+        Eigen::MatrixXd derivative_A_position_normal(Vertice* A);
         
         friend std::ostream& operator<<(std::ostream& os, const Connection& con) {
             //to print connection information (debug purpose)
@@ -56,8 +57,8 @@ class Connection
             os << std::endl;
             if (con.element_id_up != nullptr) os << "element_id_up: " << con.element_id_up->natural_id << std::endl;
             if (con.element_id_dn != nullptr) os << "element_id_dn: " << con.element_id_dn->natural_id << std::endl;
-            if (con.vertice_up != nullptr) os << "vertice_up: " << con.vertice_up->natural_id << std::endl;
-            if (con.vertice_dn != nullptr) os << "vertice_dn: " << con.vertice_dn->natural_id << std::endl;
+            //if (con.vertice_up != nullptr) os << "vertice_up: " << con.vertice_up->natural_id << std::endl;
+            //if (con.vertice_dn != nullptr) os << "vertice_dn: " << con.vertice_dn->natural_id << std::endl;
             os << "area: " << con.area << std::endl;
             os << "normal: " << con.normal << std::endl;
             os << "cell_center_vector: " << con.cell_center_vector << std::endl;

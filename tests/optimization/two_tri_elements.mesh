@@ -1,0 +1,25 @@
+#Test mesh in Medit format with two triangles and one internal face
+#Internal face vertice: [2, 3]
+#Length: 1.019803902718557
+#Normal: [ 0.98058068, -0.19611614]
+#Cell center vector: [0.9701425 , 0.24253563]
+#Orthogonality: 0.9037378388935386
+#Cost function (power error function with power 1): 0.09626216110646135
+#Cost function (power error function with power 1, area weighting): 0.09816852758049177
+#Cost function (power error function with power 1, inv_area weighting): 0.09439281498124208
+
+MeshVersionFormatted 2
+
+Dimension 2
+
+Vertices
+4
+-1 0. 1
+0. 0. 1
+0.2 1. 1
+1. 0.5 1
+
+Triangles
+2
+1 2 3 1
+2 3 4 1

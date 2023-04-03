@@ -83,15 +83,14 @@ void IO::load_vertices_xyz(std::string filename) {
     src.close();
 }
 void IO::save_vertices_xyz(std::string filename) {
-    std::ofstream src(filename);
-    src << std::scientific;
-    src << std::setprecision(8);
+    std::ofstream out(filename);
+    out << std::scientific;
+    out << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
-        src << (*(v->coor))[0] << ' ';
-        src << (*(v->coor))[1] << ' ';
-        src << (*(v->coor))[2] << std::endl;
+        //for (size_t i=0; i<mesh->dim; i++) 
+        out << (Eigen::RowVectorXd) *(v->coor) << std::endl;
     }
-    src.close();
+    out.close();
 }
 void IO::load_elements_with_vertice_ids(std::string filename) {
     //each line one element, and list of id separated by a space delimiter
@@ -132,9 +131,9 @@ void IO::save_vertices_tetgen(std::string filename) {
         src << count << ' ';
         src << std::scientific;
         src << std::setprecision(8);
-        src << (*(v->coor))[0] << ' ';
-        src << (*(v->coor))[1] << ' ';
-        src << (*(v->coor))[2] << std::endl;
+        src << (v->coor)[0] << ' ';
+        src << (v->coor)[1] << ' ';
+        src << (v->coor)[2] << std::endl;
         count++;
     }
     src.close();
@@ -261,12 +260,13 @@ void IO::load_mesh_medit(std::string filename) {
         else if ( s_eqi ( keyword, "QUADRILATERAL_VERTEX" ) )
         {
             element_ids.clear();
-            f.str(text);
+            f.clear(); f.str(text);
             for (int n=0; n<4; n++) {
                 f >> val;
                 element_ids.push_back(val);
             }
-            mesh->add_element(element_ids);
+            Element* elem = mesh->add_element(element_ids);
+            f >> elem->zone;
         }
         else if ( s_eqi ( keyword, "TRIANGLES" ) )
         {
@@ -276,12 +276,13 @@ void IO::load_mesh_medit(std::string filename) {
         else if ( s_eqi ( keyword, "TRIANGLE_VERTEX" ) )
         {
             element_ids.clear();
-            f.str(text);
+            f.clear(); f.str(text);
             for (int n=0; n<3; n++) {
                 f >> val;
                 element_ids.push_back(val);
             }
-            mesh->add_element(element_ids);
+            Element* elem = mesh->add_element(element_ids);
+            f >> elem->zone;
         }
         else if ( s_eqi ( keyword, "HEXAHEDRONS" ) ) {
             atoi ( text.c_str ( ) ); //number of hex
@@ -289,12 +290,13 @@ void IO::load_mesh_medit(std::string filename) {
         }
         else if ( s_eqi ( keyword, "HEXAHEDRON_VERTEX" ) ) {
             element_ids.clear();
-            f.str(text);
+            f.clear(); f.str(text);
             for (int n=0; n<8; n++) {
                 f >> val;
                 element_ids.push_back(val);
             }
-            mesh->add_element(element_ids);
+            Element* elem = mesh->add_element(element_ids);
+            f >> elem->zone;
         }
         else if ( s_eqi ( keyword, "TETRAHEDRONS" ) ) {
             atoi ( text.c_str ( ) ); //number of tet
@@ -302,12 +304,13 @@ void IO::load_mesh_medit(std::string filename) {
         }
         else if ( s_eqi ( keyword, "TETRAHEDRON_VERTEX" ) ) {
             element_ids.clear();
-            f.str(text);
+            f.clear(); f.str(text);
             for (int n=0; n<4; n++) {
                 f >> val;
                 element_ids.push_back(val);
             }
-            mesh->add_element(element_ids);
+            Element* elem = mesh->add_element(element_ids);
+            f >> elem->zone;
         }
         else if ( s_eqi ( keyword, "PRISMS" ) ) {
             atoi ( text.c_str ( ) ); //number of prisms
@@ -315,12 +318,13 @@ void IO::load_mesh_medit(std::string filename) {
         }
         else if ( s_eqi ( keyword, "PRISMS_VERTEX" ) ) {
             element_ids.clear();
-            f.str(text);
+            f.clear(); f.str(text);
             for (int n=0; n<6; n++) {
                 f >> val;
                 element_ids.push_back(val);
             }
-            mesh->add_element(element_ids);
+            Element* elem = mesh->add_element(element_ids);
+            f >> elem->zone;
         }
         else if ( s_eqi ( keyword, "PYRAMIDS" ) ) {
             atoi ( text.c_str ( ) ); //number of pyramids
@@ -328,19 +332,20 @@ void IO::load_mesh_medit(std::string filename) {
         }
         else if ( s_eqi ( keyword, "PYRAMIDS_VERTEX" ) ) {
             element_ids.clear();
-            f.str(text);
+            f.clear(); f.str(text);
             for (int n=0; n<5; n++) {
                 f >> val;
                 element_ids.push_back(val);
             }
-            mesh->add_element(element_ids);
+            Element* elem = mesh->add_element(element_ids);
+            f >> elem->zone;
         }
         else if ( s_eqi ( keyword, "VERTICES" ) ) {
             atoi ( text.c_str ( ) ); //number of vertices
             keyword = "VERTEX_COORDINATE";
         }
         else if ( s_eqi ( keyword, "VERTEX_COORDINATE" ) ) {
-            f.str(text);
+            f.clear(); f.str(text);
             if (mesh->dim == 3) {
                 f >> x >> y >> z;
                 mesh->add_vertice(x,y,z,vertice_id);
@@ -517,8 +522,7 @@ void IO::save_mesh_medit(std::string filename) {
     out << std::scientific;
     out << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
-        for (size_t i=0; i<mesh->dim; i++) out << (*(v->coor))[i] << ' ';
-        out << "1" << std::endl;
+        out << (Eigen::RowVectorXd) *(v->coor) << " 1" << std::endl;
     }
 
     out << std::endl;
@@ -600,9 +604,9 @@ void IO::save_mesh_PFLOTRAN(std::string filename) {
     out << std::scientific;
     out << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
-        out << (*(v->coor))[0] << ' ';
-        out << (*(v->coor))[1] << ' ';
-        out << (*(v->coor))[2] << std::endl;
+        out << (v->coor)[0] << ' ';
+        out << (v->coor)[1] << ' ';
+        out << (v->coor)[2] << std::endl;
     }
     out.close();
 }
@@ -617,9 +621,9 @@ void IO::load_mesh_DAT_salome(std::string filename) {
     std::string line;
     src >> n_v >> n_e;
     for (unsigned int i=0; i<n_v; i++) {
-        if (mesh->dim == 2) src >> id >> x >> y;
-        else src >> id >> x >> y >> z;
-        mesh->add_vertice(x,y,z,id);
+        src >> id >> x >> y >> z;
+        if (mesh->dim == 2) mesh->add_vertice(x,y,id);
+        else mesh->add_vertice(x,y,z,id);
     }
     getline(src, line); //flush the rest of the previous line
     for (unsigned int i=0; i<n_e; i++) {
@@ -680,9 +684,9 @@ void IO::save_mesh_DAT_salome(std::string filename) {
     out << std::setprecision(8);
     for (Vertice* v : mesh->vertices) {
         out << v->natural_id << ' ';
-        out << (*(v->coor))[0] << ' ';
-        out << (*(v->coor))[1] << ' ';
-        out << (*(v->coor))[2] << std::endl;
+        out << (v->coor)[0] << ' ';
+        out << (v->coor)[1] << ' ';
+        out << (v->coor)[2] << std::endl;
     }
     out.close();
     //elements
