@@ -10,8 +10,6 @@
 #include "Connection.h"
 #include <Eigen/Core>
 
-//typedef std::array<unsigned int, 3> face_id;
-
 
 void OrthOpt::computeCostFunction() {
     cost_function_value = 0;
@@ -20,6 +18,10 @@ void OrthOpt::computeCostFunction() {
     	mesh->connections_internal[count]->compute_orthogonality();
         cost_function_value += face_weight[count] * \
                        Ef->get_value(mesh->connections_internal[count]->orthogonality);
+    }
+    #pragma omp parallel for reduction (+:cost_function_value)
+    for (auto elem : mesh->elements) {
+        if (elem->is_inverted()) cost_function_value = std::nan("");
     }
 }
 

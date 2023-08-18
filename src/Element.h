@@ -19,9 +19,8 @@ class Element
         virtual ~Element() {};
         
         virtual Eigen::VectorXd center() {return Eigen::VectorXd();};
-        //virtual Eigen::Vector3d center();
-        
         virtual Eigen::MatrixXd center_derivative(Vertice* p) {return Eigen::MatrixXd();};
+        virtual bool is_inverted() {return false;};
 };
 
 class Tri_Element : public Element
@@ -170,6 +169,33 @@ class Polygon_Element : public Element
             Eigen::Matrix2d derivative;
             derivative << (c_dx[0]-c[0]) / pertub, (c_dy[0]-c[0]) / pertub, (c_dx[1]-c[1]) / pertub, (c_dy[1]-c[1]) / pertub;
             return derivative;
+        }
+        
+        bool is_inverted() {
+             //https://stackoverflow.com/questions/471962/how-do-i-efficiently-determine-if-a-polygon-is-convex-non-convex-or-complex
+             Eigen::Vector2d u, v;
+             double test, test_ref;
+             //ref on vertices[0]
+             u = *vertices[0]->coor - *vertices[3]->coor;
+             v = *vertices[1]->coor - *vertices[0]->coor;
+             test_ref = u[0]*v[1]-v[0]*u[1];
+             //test on vertices[1]
+             u = v;
+             v = *vertices[2]->coor - *vertices[1]->coor;
+             test_ref = u[0]*v[1]-v[0]*u[1];
+             if (test_ref * test < 0) return true;
+             //test on vertices[2]
+             u = v;
+             v = *vertices[3]->coor - *vertices[2]->coor;
+             test_ref = u[0]*v[1]-v[0]*u[1];
+             if (test_ref * test < 0) return true;
+             //test on vertices[3]
+             u = v;
+             v = *vertices[0]->coor - *vertices[3]->coor;
+             test_ref = u[0]*v[1]-v[0]*u[1];
+             if (test_ref * test < 0) return true;
+             //if here, not concave
+             return false;
         }
 };
 
