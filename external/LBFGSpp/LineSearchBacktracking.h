@@ -1,4 +1,4 @@
-// Copyright (C) 2016-2022 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2016-2023 Yixuan Qiu <yixuan.qiu@cos.name>
 // Under MIT license
 
 #ifndef LBFGSPP_LINE_SEARCH_BACKTRACKING_H
@@ -16,7 +16,7 @@ template <typename Scalar>
 class LineSearchBacktracking
 {
 private:
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+    using Vector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
 public:
     ///

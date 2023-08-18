@@ -1,2 +1,2 @@
 https://github.com/yixuan/LBFGSpp
-Commit 563106b from May 26, 2022
+Commit 0a32ccb from Jul 12, 2023

@@ -1,5 +1,5 @@
-// Copyright (C) 2016-2022 Yixuan Qiu <yixuan.qiu@cos.name>
-// Copyright (C) 2016-2022 Dirk Toewe <DirkToewe@GoogleMail.com>
+// Copyright (C) 2016-2023 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2016-2023 Dirk Toewe <DirkToewe@GoogleMail.com>
 // Under MIT license
 
 #ifndef LBFGSPP_LINE_SEARCH_BRACKETING_H
@@ -17,7 +17,7 @@ template <typename Scalar>
 class LineSearchBracketing
 {
 private:
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+    using Vector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
 public:
     ///

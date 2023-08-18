@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2020-2023 Yixuan Qiu <yixuan.qiu@cos.name>
 // Under MIT license
 
 #ifndef LBFGSPP_LBFGSB_H
@@ -23,10 +23,10 @@ template <typename Scalar,
 class LBFGSBSolver
 {
 private:
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-    typedef Eigen::Map<Vector> MapVec;
-    typedef std::vector<int> IndexSet;
+    using Vector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+    using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+    using MapVec = Eigen::Map<Vector>;
+    using IndexSet = std::vector<int>;
 
     const LBFGSBParam<Scalar>& m_param;  // Parameters to control the LBFGS algorithm
     BFGSMat<Scalar, true> m_bfgs;        // Approximation to the Hessian matrix
@@ -163,7 +163,7 @@ public:
         m_drt.noalias() = xcp - x;
         m_drt.normalize();
         // Tolerance for s'y >= eps * (y'y)
-        const Scalar eps = std::numeric_limits<Scalar>::epsilon();
+        constexpr Scalar eps = std::numeric_limits<Scalar>::epsilon();
         // s and y vectors
         Vector vecs(n), vecy(n);
         // Number of iterations used
@@ -177,7 +177,7 @@ public:
 
             // Maximum step size to make x feasible
             Scalar step_max = max_step_size(x, m_drt, lb, ub);
-            
+
             // In some cases, the direction returned by the subspace minimization procedure
             // in the previous iteration is pathological, leading to issues such as
             // step_max~=0 and dg>=0. If this happens, we use xcp-x as the search direction,
